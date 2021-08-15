@@ -1,8 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Switch, Route, Redirect } from 'react-router-dom';
+import { Spinner } from 'react-bootstrap';
 
 import Page404 from './Page404';
 import routes from './routes';
+import isLoadingContext from '../../common/context/isLoadingContext';
 
 export default function Router() {
     return (
@@ -22,7 +24,29 @@ export default function Router() {
                                     return <Redirect to="/" />;
                                 }
 
-                                return <Layout>{Component && <Component />}</Layout>;
+                                return (
+                                    <isLoadingContext.Consumer>
+                                        {({ isLoading, toggleLoading }) => (
+                                            <Layout>
+                                                {isLoading ? (
+                                                    <Spinner
+                                                        animation="border"
+                                                        variant="primary"
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: 'calc(50% - 16px)',
+                                                            left: 'calc(50% - 16px)',
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    Component && (
+                                                        <Component toggleLoading={toggleLoading} />
+                                                    )
+                                                )}
+                                            </Layout>
+                                        )}
+                                    </isLoadingContext.Consumer>
+                                );
                             })()}
                         </Route>
                     ),

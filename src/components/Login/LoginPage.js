@@ -47,6 +47,7 @@ class LoginPage extends Component {
 
     handleLogin = async (e) => {
         const { email, password } = this.state;
+        const { toggleLoading } = this.props;
 
         e.preventDefault();
 
@@ -54,7 +55,9 @@ class LoginPage extends Component {
             return;
         }
 
+        toggleLoading(true);
         await this.login(email, password);
+        toggleLoading(false);
     };
 
     handleChange = ({ target: { name, value } }) => this.setState({ [name]: value });
