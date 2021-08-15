@@ -2,13 +2,10 @@ import React from 'react';
 import { Col, Container, Row } from 'react-bootstrap';
 import PropTypes from 'prop-types';
 
-import Navigationbar from '../../Navbar/Navigationbar';
-
-export default function MainLayout({ children }) {
+export default function PublicLayout({ children }) {
     return (
         <div>
             <Container fluid>
-                <Navigationbar />
                 <Row>
                     <Col>{children}</Col>
                 </Row>
@@ -17,10 +14,10 @@ export default function MainLayout({ children }) {
     );
 }
 
-MainLayout.defaultProps = {
+PublicLayout.defaultProps = {
     children: null,
 };
 
-MainLayout.propTypes = {
-    children: PropTypes.elementType,
+PublicLayout.propTypes = {
+    children: PropTypes.element,
 };
