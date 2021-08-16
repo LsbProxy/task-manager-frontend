@@ -1,117 +1,106 @@
-import React, { Component } from 'react';
-import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
+import { some } from 'lodash';
+import React, { useState, useContext } from 'react';
+import { Button, Col, Form, Row } from 'react-bootstrap';
+import { LoaderContext } from '../../common/context/LoaderContextProvider';
 
 import authService from '../../common/services/AuthService/AuthService';
-import handleError from '../../common/utils/handleError';
+import ErrorAlertList from '../Errors/ErrorAlertList';
 
-class LoginPage extends Component {
-    constructor() {
-        super();
+const LoginPage = () => {
+    const [state, setState] = useState({ email: '', password: '', errors: [] });
+    const { showLoader } = useContext(LoaderContext);
 
-        this.state = {
-            email: '',
-            password: '',
-            errors: [],
-        };
+    const handleError = (err) => {
+        if (err && err.error) {
+            setState((newState) => {
+                if (!some(newState.errors, (msg) => msg === err.error)) {
+                    return { ...newState, errors: [...newState.errors, err.error] };
+                }
 
-        this.handleError = handleError.bind(this);
-    }
-
-    login = async (email, password) => {
-        try {
-            const user = await authService.login(email, password);
-            window.localStorage.setItem('user', JSON.stringify(user));
-            window.location.href = '';
-        } catch (e) {
-            this.handleError(e);
+                return newState;
+            });
         }
     };
 
-    validateLogin = () => {
-        const { email, password } = this.state;
-        const errors = [];
+    const login = async () => {
+        try {
+            const { email, password } = state;
+
+            showLoader(true);
+
+            const user = await authService.login(email, password);
+
+            window.localStorage.setItem('user', JSON.stringify(user));
+            window.location.href = '';
+        } catch (err) {
+            showLoader(false);
+            handleError(err);
+        }
+    };
+
+    const validateLogin = () => {
+        const { email, password } = state;
+        const errorList = [];
 
         if (!email) {
-            errors.push('Email is required.');
+            errorList.push('Email is required.');
         }
 
         if (!password) {
-            errors.push('Password is required.');
+            errorList.push('Password is required.');
         }
 
-        const hasErrors = errors.length > 0;
+        setState({ ...state, errors: errorList });
 
-        this.setState({ errors });
-        return !hasErrors;
+        const hasErrors = errorList.length;
+
+        return !!hasErrors;
     };
 
-    handleLogin = async (e) => {
-        const { email, password } = this.state;
-        const { toggleLoading } = this.props;
-
+    const handleLogin = (e) => {
         e.preventDefault();
 
-        if (!this.validateLogin()) {
+        if (validateLogin()) {
             return;
         }
 
-        toggleLoading(true);
-        await this.login(email, password);
-        toggleLoading(false);
+        login();
     };
 
-    handleChange = ({ target: { name, value } }) => this.setState({ [name]: value });
+    const handleChange = ({ target: { name, value } }) => setState({ ...state, [name]: value });
 
-    renderErrors = () => {
-        const { errors } = this.state;
-
-        return errors.map((err) => (
-            <Alert variant="danger" key={err}>
-                {err}
-            </Alert>
-        ));
-    };
-
-    render() {
-        const { email, password } = this.state;
-
-        return (
-            <Row>
-                <Col md={{ span: 4, offset: 4 }}>
-                    {this.renderErrors()}
-                    <Form onSubmit={this.handleLogin}>
-                        <Form.Group className="mb-3" controlId="formBasicEmail">
-                            <Form.Label>Email address</Form.Label>
-                            <Form.Control
-                                name="email"
-                                value={email}
-                                onChange={this.handleChange}
-                                type="email"
-                                placeholder="Enter email"
-                            />
-                        </Form.Group>
-
-                        <Form.Group className="mb-3" controlId="formBasicPassword">
-                            <Form.Label>Password</Form.Label>
-                            <Form.Control
-                                name="password"
-                                value={password}
-                                onChange={this.handleChange}
-                                type="password"
-                                placeholder="Password"
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="formBasicCheckbox">
-                            <Form.Check type="checkbox" label="Remember me" />
-                        </Form.Group>
-                        <Button variant="primary" type="submit">
-                            Login
-                        </Button>
-                    </Form>
-                </Col>
-            </Row>
-        );
-    }
-}
+    return (
+        <Row className="padd-top-sml justify-content-center mt-5">
+            <Col lg="3" md="5">
+                <ErrorAlertList errors={state.errors} />
+                <Form onSubmit={handleLogin}>
+                    <Form.Group className="mb-3" controlId="formBasicEmail">
+                        <Form.Label>Email address</Form.Label>
+                        <Form.Control
+                            name="email"
+                            value={state.email}
+                            onChange={handleChange}
+                            type="email"
+                            placeholder="Enter email"
+                        />
+                    </Form.Group>
+                    <Form.Group className="mb-3" controlId="formBasicPassword">
+                        <Form.Label>Password</Form.Label>
+                        <Form.Control
+                            name="password"
+                            value={state.password}
+                            onChange={handleChange}
+                            type="password"
+                            placeholder="Password"
+                        />
+                    </Form.Group>
+                    <Button variant="primary" type="submit">
+                        Login
+                    </Button>
+                </Form>
+            </Col>
+        </Row>
+    );
+};
 
 export default LoginPage;

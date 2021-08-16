@@ -1,26 +1,20 @@
-import React from 'react';
-import { Col, Container, Row } from 'react-bootstrap';
-import PropTypes from 'prop-types';
+import React, { useContext } from 'react';
+import { Container } from 'react-bootstrap';
+import { LoaderContext } from '../../../common/context/LoaderContextProvider';
+import Loader from '../../Loader/Loader';
 
 import Navigationbar from '../../Navbar/Navigationbar';
 
 export default function MainLayout({ children }) {
+    const { isLoading } = useContext(LoaderContext);
+
     return (
         <div>
             <Container fluid>
                 <Navigationbar />
-                <Row>
-                    <Col>{children}</Col>
-                </Row>
+                {isLoading && <Loader />}
+                <div className={isLoading ? 'invisible' : ''}>{children}</div>
             </Container>
         </div>
     );
 }
-
-MainLayout.defaultProps = {
-    children: null,
-};
-
-MainLayout.propTypes = {
-    children: PropTypes.elementType,
-};

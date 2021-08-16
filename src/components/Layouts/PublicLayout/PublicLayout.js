@@ -1,23 +1,17 @@
-import React from 'react';
-import { Col, Container, Row } from 'react-bootstrap';
-import PropTypes from 'prop-types';
+import React, { useContext } from 'react';
+import { Container } from 'react-bootstrap';
+import { LoaderContext } from '../../../common/context/LoaderContextProvider';
+import Loader from '../../Loader/Loader';
 
 export default function PublicLayout({ children }) {
+    const { isLoading } = useContext(LoaderContext);
+
     return (
         <div>
             <Container fluid>
-                <Row>
-                    <Col>{children}</Col>
-                </Row>
+                {isLoading && <Loader />}
+                <div className={isLoading ? 'invisible' : ''}>{children}</div>
             </Container>
         </div>
     );
 }
-
-PublicLayout.defaultProps = {
-    children: null,
-};
-
-PublicLayout.propTypes = {
-    children: PropTypes.element,
-};

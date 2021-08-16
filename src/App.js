@@ -1,21 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import isLoadingContext from './common/context/isLoadingContext';
+import LoaderContextProvider from './common/context/LoaderContextProvider';
 
-import ErrorModal from './components/ErrorModal/ErrorModal';
+import ErrorModal from './components/Errors/ErrorModal';
 import Router from './components/Router/Router';
 
 function App() {
-    const [isLoading, useLoading] = useState(false);
-    const toggleLoading = (value) => useLoading(value);
-
     return (
         <div className="App">
-            <isLoadingContext.Provider value={{ isLoading, toggleLoading }}>
+            <LoaderContextProvider>
                 <ErrorBoundary FallbackComponent={ErrorModal}>
                     <Router />
                 </ErrorBoundary>
-            </isLoadingContext.Provider>
+            </LoaderContextProvider>
         </div>
     );
 }
