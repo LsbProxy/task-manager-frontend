@@ -1,4 +1,5 @@
 import { camelCase, each, isObject, isPlainObject } from 'lodash';
+import { setTimeStamp } from '../../utils/idleCounter';
 
 const { REACT_APP_API_ENDPOINT } = process.env;
 
@@ -9,6 +10,8 @@ class HttpService {
 
     fetch = (...params) =>
         fetch(...params).then((response) => {
+            setTimeStamp();
+
             if (response.status > 400) {
                 return response.json().then((err) => this.mapError(err));
             }
