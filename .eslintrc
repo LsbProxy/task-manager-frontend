@@ -16,6 +16,7 @@
         "react/jsx-filename-extension": ["off"],
         "react/prop-types": ["off"],
         "no-return-assign": ["off"],
-        "react/destructuring-assignment": ["off"]
+        "react/destructuring-assignment": ["off"],
+        "react/jsx-props-no-spreading": ["off"]
     }
 }

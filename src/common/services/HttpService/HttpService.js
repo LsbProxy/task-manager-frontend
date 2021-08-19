@@ -13,6 +13,10 @@ class HttpService {
                 return response.json().then((err) => this.mapError(err));
             }
 
+            if (response.status === 204) {
+                return {};
+            }
+
             return response.json().then((json) => this.convertKeysToCamelCase(json));
         });
 

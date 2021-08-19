@@ -29,10 +29,9 @@ class DashboardList extends Component {
         try {
             const dashboards = await dashboardService.listDashboards();
             this.setState({ dashboards });
+            showLoader(false);
         } catch (e) {
             console.log(e);
-        } finally {
-            showLoader(false);
         }
     };
 

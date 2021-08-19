@@ -57,10 +57,9 @@ class SprintList extends Component {
             showLoader(true);
             const dashboard = await dashboardService.getDashboard(id);
             this.setState({ dashboard });
+            showLoader(false);
         } catch (e) {
             console.log(e);
-        } finally {
-            showLoader(false);
         }
     };
 

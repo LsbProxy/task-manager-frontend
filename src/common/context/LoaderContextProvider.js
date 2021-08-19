@@ -1,6 +1,6 @@
 import React, { useState, createContext } from 'react';
 
-export const LoaderContext = createContext(false);
+export const LoaderContext = createContext();
 
 const LoaderContextProvider = ({ children }) => {
     const [isLoading, showLoader] = useState(false);

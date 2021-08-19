@@ -1,11 +1,18 @@
-import { isEmpty } from 'lodash';
+import { filter, findIndex, isEmpty, map, startCase, get } from 'lodash';
 import React, { Component } from 'react';
-import { Row, Toast, ToastContainer } from 'react-bootstrap';
-import { withRouter } from 'react-router-dom';
+import { Col, Row, Button } from 'react-bootstrap';
+import { useRouteMatch } from 'react-router-dom';
 
 import { LoaderContext } from '../../common/context/LoaderContextProvider';
+import { ModalContext } from '../../common/context/ModalContextProvider';
 import sprintService from '../../common/services/SprintService/SprintService';
+import taskService from '../../common/services/TaskService/TaskService';
 import redirectToHomePage from '../../common/utils/redirectToHomePage';
+import taskStatus from '../../common/utils/taskStatus';
+import DraggableContainer from '../Draggable/DraggableContainer';
+import DraggableProvider from '../Draggable/DraggableProvider';
+import CreateTaskModal from './CreateTaskModal';
+import Task from './Task';
 
 class TaskGrid extends Component {
     constructor() {
@@ -39,7 +46,7 @@ class TaskGrid extends Component {
     }
 
     fetchSprint = async () => {
-        const { showLoader } = this.context;
+        const { showLoader } = this.props;
         try {
             const {
                 match: {
@@ -52,44 +59,146 @@ class TaskGrid extends Component {
             showLoader(true);
             const sprint = await sprintService.getSprint(id);
             this.setState({ sprint });
+            showLoader(false);
         } catch (e) {
             console.log(e);
-        } finally {
-            showLoader(false);
         }
     };
 
-    renderTasks = () => {
+    openCreateTaskModal = () => {
+        this.props.setModalState({
+            show: true,
+            ModalContentComponent: (props) => (
+                <CreateTaskModal
+                    dashboardId={get(this.state, 'sprint.dashboard')}
+                    sprintId={get(this.state, 'sprint.id')}
+                    refreshGrid={this.fetchSprint}
+                    {...props}
+                />
+            ),
+        });
+    };
+
+    updateTaskStatus = async (newStatus, { item }) => {
+        const { showLoader } = this.props;
+
+        try {
+            const { sprint } = this.state;
+
+            const newState = { sprint: { ...sprint } };
+            const updatedTask = { ...item, status: newStatus };
+            const taskIndex = findIndex(sprint.tasks, ({ id }) => id === updatedTask.id);
+
+            newState.sprint.tasks[taskIndex] = updatedTask;
+
+            showLoader(true);
+            await taskService.updateTask(updatedTask);
+
+            this.setState(newState);
+            showLoader(false);
+        } catch (e) {
+            showLoader(false);
+            console.log(e);
+        }
+    };
+
+    updateTaskInGrid = (task, removeTaskFromGrid) => {
+        const { sprint } = this.state;
+        const newState = { sprint: { ...sprint } };
+
+        if (removeTaskFromGrid) {
+            newState.sprint.tasks = filter(sprint.tasks, ({ id }) => id !== task.id);
+        } else {
+            const taskIndex = findIndex(sprint.tasks, ({ id }) => id === task.id);
+            newState.sprint.tasks[taskIndex] = task;
+        }
+
+        this.setState(newState);
+    };
+
+    renderDraggableColumnContainer = (column) => {
+        const {
+            sprint: { tasks },
+        } = this.state;
+
+        return (
+            <Col key={column} sm="2" className="border border-bottom-0 border-top-0">
+                <Row id="draggableRowLabel">
+                    <div className="border-bottom border-top">
+                        <strong>{startCase(column)}</strong>
+                    </div>
+                </Row>
+                <Row>
+                    <DraggableContainer
+                        id={column}
+                        items={filter(tasks, (task) => task.status === column)}
+                        itemProps={{ updateTaskInGrid: this.updateTaskInGrid }}
+                        ItemComponent={Task}
+                        updateItem={this.updateTaskStatus}
+                        handleChange={this.updateTaskInGrid}
+                    />
+                </Row>
+            </Col>
+        );
+    };
+
+    renderDraggableContainers = () => {
         const {
             sprint: { tasks, title: sprintTitle },
         } = this.state;
 
         if (isEmpty(tasks)) {
-            return `No Tasks in ${sprintTitle}.`;
+            return `No Tasks in ${sprintTitle || 'Sprint'}.`;
         }
 
         return (
-            <ToastContainer className="p-3">
-                {tasks.map((task) => this.renderTask(task))}
-            </ToastContainer>
+            <DraggableProvider>
+                {map(taskStatus, ({ label }) => this.renderDraggableColumnContainer(label))}
+            </DraggableProvider>
         );
     };
 
-    renderTask = ({ id, title, description, createdDate }) => (
-        <Toast key={id}>
-            <Toast.Header closeButton={false}>
-                <strong className="me-auto">{title}</strong>
-                <small>Created: {new Date(createdDate).toLocaleString()}</small>
-            </Toast.Header>
-            <Toast.Body>{description}</Toast.Body>
-        </Toast>
-    );
+    renderSidebar = () => {
+        const { isLoading } = this.props;
+
+        return (
+            <Col sm="2" className="border border-bottom-0 border-top-0">
+                <Row className="p-3">
+                    <Button size="lg" disabled={isLoading} onClick={this.openCreateTaskModal}>
+                        Create Task
+                    </Button>
+                </Row>
+            </Col>
+        );
+    };
 
     render() {
-        return <Row>{this.renderTasks()}</Row>;
+        return (
+            <Row>
+                {this.renderSidebar()}
+                {this.renderDraggableContainers()}
+            </Row>
+        );
     }
 }
 
-TaskGrid.contextType = LoaderContext;
-
-export default withRouter(TaskGrid);
+export default () => {
+    const match = useRouteMatch();
+    return (
+        <ModalContext.Consumer>
+            {({ state: modal, setState: setModalState }) => (
+                <LoaderContext.Consumer>
+                    {({ isLoading, showLoader }) => (
+                        <TaskGrid
+                            isLoading={isLoading}
+                            showLoader={showLoader}
+                            setModalState={setModalState}
+                            modal={modal}
+                            match={match}
+                        />
+                    )}
+                </LoaderContext.Consumer>
+            )}
+        </ModalContext.Consumer>
+    );
+};
