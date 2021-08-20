@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { filter, map } from 'lodash';
+import { filter, first, map } from 'lodash';
 import { Button, Col, FloatingLabel, Form, Modal, Row } from 'react-bootstrap';
 
 import dashboardService from '../../common/services/DashboardService/DashboardService';
 import Loader from '../Loader/Loader';
+import authService from '../../common/services/AuthService/AuthService';
 
 const CreateDashboardModal = ({ hideModal, refreshGrid }) => {
     const [state, setState] = useState({
@@ -18,8 +19,11 @@ const CreateDashboardModal = ({ hideModal, refreshGrid }) => {
     const fetchMembers = async () => {
         try {
             showLoader(true);
-            const { members } = await dashboardService.getDashboard();
-            setState((newState) => ({ ...newState, assignedtTo: members[0], members }));
+            const users = await authService.getUsers();
+
+            const members = map(users, ({ username }) => username);
+
+            setState((newState) => ({ ...newState, assignedTo: first(members), members }));
             showLoader(false);
         } catch (e) {
             showLoader(false);
@@ -28,7 +32,7 @@ const CreateDashboardModal = ({ hideModal, refreshGrid }) => {
     };
 
     useEffect(() => {
-        // fetchMembers();
+        fetchMembers();
     }, []);
 
     const handleChange = ({ target: { name, value } }) => {
@@ -107,7 +111,7 @@ const CreateDashboardModal = ({ hideModal, refreshGrid }) => {
                                     value={members}
                                     onChange={handleMembersChange}
                                 >
-                                    {map(['admin', 'user'], (member) => (
+                                    {map(members, (member) => (
                                         <option key={member} value={member}>
                                             {member}
                                         </option>
