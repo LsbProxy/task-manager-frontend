@@ -1,4 +1,4 @@
-import { camelCase, each, isObject, isPlainObject } from 'lodash';
+import { camelCase, each, isObject, isPlainObject, snakeCase } from 'lodash';
 import { setTimeStamp } from '../../utils/idleCounter';
 
 const { REACT_APP_API_ENDPOINT } = process.env;
@@ -12,7 +12,7 @@ class HttpService {
         fetch(...params).then((response) => {
             setTimeStamp();
 
-            if (response.status > 400) {
+            if (response.status >= 400) {
                 return response.json().then((err) => this.mapError(err));
             }
 
@@ -45,6 +45,20 @@ class HttpService {
         return data;
     };
 
+    convertKeysToSnakeCase = (json) => {
+        const data = isPlainObject(json) ? {} : [];
+
+        each(json, (value, key) => {
+            if (isObject(value)) {
+                data[snakeCase(key)] = this.convertKeysToSnakeCase(json[key]);
+            } else {
+                data[snakeCase(key)] = value;
+            }
+        });
+
+        return data;
+    };
+
     constructRequest = (method, data) => {
         const request = {
             method,
@@ -62,7 +76,7 @@ class HttpService {
         }
 
         if (data) {
-            request.body = JSON.stringify(data);
+            request.body = JSON.stringify(this.convertKeysToSnakeCase(data));
         }
 
         return request;

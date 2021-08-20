@@ -1,10 +1,18 @@
-import { join, isEmpty } from 'lodash';
+import { filter, findIndex, get, isEmpty } from 'lodash';
 import React, { Component } from 'react';
-import { Col, Container, Row, Toast, ToastContainer } from 'react-bootstrap';
-import { withRouter } from 'react-router-dom';
+import { Button, Col, Row, ToastContainer } from 'react-bootstrap';
 import { LoaderContext } from '../../common/context/LoaderContextProvider';
+import { ModalContext } from '../../common/context/ModalContextProvider';
 
 import dashboardService from '../../common/services/DashboardService/DashboardService';
+import CreateDashboardModal from './CreateDashboardModal';
+import Dashboard from './Dashboard';
+
+const calculateHeight = () => {
+    const navHeight = get(document.querySelector('nav'), 'clientHeight', 0);
+
+    return window.innerHeight - navHeight;
+};
 
 class DashboardList extends Component {
     constructor() {
@@ -19,13 +27,8 @@ class DashboardList extends Component {
         this.fetchDashboards();
     }
 
-    openDashboard = (id) => () => {
-        const { history } = this.props;
-        history.push(`/dashboard/${id}`);
-    };
-
     fetchDashboards = async () => {
-        const { showLoader } = this.context;
+        const { showLoader } = this.props;
         try {
             const dashboards = await dashboardService.listDashboards();
             this.setState({ dashboards });
@@ -35,46 +38,86 @@ class DashboardList extends Component {
         }
     };
 
+    updateDashboardInGrid = (dashboard, removeFromGrid) => {
+        const { dashboards } = this.state;
+        const newState = { dashboards: [...dashboards] };
+
+        if (removeFromGrid) {
+            newState.dashboards = filter(dashboards, ({ id }) => id !== dashboard.id);
+        } else {
+            const index = findIndex(dashboards, ({ id }) => id === dashboard.id);
+            newState.dashboards[index] = dashboard;
+        }
+
+        this.setState(newState);
+    };
+
+    openCreateDashboardModal = () => {
+        this.props.setModalState({
+            show: true,
+            ModalContentComponent: (props) => (
+                <CreateDashboardModal refreshGrid={this.fetchDashboards} {...props} />
+            ),
+        });
+    };
+
     renderDashboards = () => {
         const { dashboards } = this.state;
+        const { showLoader } = this.props;
 
         if (isEmpty(dashboards)) {
             return 'No Dashboards';
         }
 
+        return dashboards.map((dashboard) => (
+            <Dashboard
+                key={dashboard.id}
+                dashboard={dashboard}
+                updateDashboardInGrid={this.updateDashboardInGrid}
+                showLoader={showLoader}
+            />
+        ));
+    };
+
+    renderSidebar = () => {
+        const { isLoading } = this.props;
+
         return (
-            <ToastContainer className="p-3">
-                {dashboards.map(({ id, title, description, createdDate, members }) => (
-                    <Toast key={id} onClick={this.openDashboard(id)}>
-                        <Toast.Header closeButton={false}>
-                            <strong className="me-auto">{title}</strong>
-                            <small>Created: {new Date(createdDate).toLocaleString()}</small>
-                        </Toast.Header>
-                        <Toast.Body>
-                            <Container>
-                                <Row>
-                                    <Col>
-                                        <Row>Description:</Row>
-                                        <Col>{description}</Col>
-                                    </Col>
-                                    <Col>
-                                        <Row>Members:</Row>
-                                        <Col>{join(members, ', ')}</Col>
-                                    </Col>
-                                </Row>
-                            </Container>
-                        </Toast.Body>
-                    </Toast>
-                ))}
-            </ToastContainer>
+            <Col sm="2" className="border border-bottom-0 border-top-0">
+                <Row className="p-3">
+                    <Button size="lg" disabled={isLoading} onClick={this.openCreateDashboardModal}>
+                        Create Dashboard
+                    </Button>
+                </Row>
+            </Col>
         );
     };
 
     render() {
-        return <Row>{this.renderDashboards()}</Row>;
+        return (
+            <Row style={{ height: calculateHeight() }}>
+                {this.renderSidebar()}
+                <Col sm="10" className="pb-5">
+                    <ToastContainer>{this.renderDashboards()}</ToastContainer>
+                </Col>
+            </Row>
+        );
     }
 }
 
-DashboardList.contextType = LoaderContext;
-
-export default withRouter(DashboardList);
+export default () => (
+    <ModalContext.Consumer>
+        {({ state: modal, setState: setModalState }) => (
+            <LoaderContext.Consumer>
+                {({ isLoading, showLoader }) => (
+                    <DashboardList
+                        isLoading={isLoading}
+                        showLoader={showLoader}
+                        setModalState={setModalState}
+                        modal={modal}
+                    />
+                )}
+            </LoaderContext.Consumer>
+        )}
+    </ModalContext.Consumer>
+);

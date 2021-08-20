@@ -14,6 +14,8 @@ class DashboardService {
     createDashboard = async (data) => this.HttpService.post(route, data);
 
     updateDashboard = async (data) => this.HttpService.put(`${route}${data.id}/`, data);
+
+    deleteDashboard = async (id) => this.HttpService.delete(`${route}${id}/`);
 }
 
 const dashboardService = new DashboardService();

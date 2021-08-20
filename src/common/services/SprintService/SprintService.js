@@ -39,6 +39,8 @@ class SprintService {
         );
         return this.mapData(response);
     };
+
+    deleteSprint = async (id) => this.HttpService.delete(`${route}${id}/`);
 }
 
 const sprintService = new SprintService();
