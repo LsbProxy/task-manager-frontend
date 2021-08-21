@@ -21,6 +21,11 @@ class App extends Component {
         this.idleCounter();
     }
 
+    componentWillUnmount = () => {
+        clearInterval(this.refresh);
+        clearInterval(this.idleCount);
+    };
+
     render() {
         return (
             <div className="App">

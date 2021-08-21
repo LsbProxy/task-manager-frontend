@@ -1,4 +1,4 @@
-import { some } from 'lodash';
+import { each, isEmpty, some } from 'lodash';
 import React, { useState, useContext } from 'react';
 import { Button, Col, Form, Row } from 'react-bootstrap';
 import { useHistory } from 'react-router-dom';
@@ -13,13 +13,17 @@ const LoginPage = () => {
     const history = useHistory();
 
     const handleError = (err) => {
-        if (err && err.error) {
+        if (err && !isEmpty(err.error)) {
             setState((newState) => {
-                if (!some(newState.errors, (msg) => msg === err.error)) {
-                    return { ...newState, errors: [...newState.errors, err.error] };
-                }
+                const errors = [...newState.errors];
 
-                return newState;
+                each(err.error, (error) => {
+                    if (!some(newState.errors, (msg) => msg === error)) {
+                        errors.push(error);
+                    }
+                });
+
+                return { ...newState, errors };
             });
         }
     };

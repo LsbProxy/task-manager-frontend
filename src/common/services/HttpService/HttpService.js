@@ -28,7 +28,19 @@ class HttpService {
             window.location.href = '/logout';
         }
 
-        throw err;
+        const mappedError = { error: [] };
+
+        each(err, (value) => {
+            if (isObject(value)) {
+                each(value, (val) => {
+                    mappedError.error.push(val);
+                });
+            } else {
+                mappedError.error.push(value);
+            }
+        });
+
+        throw mappedError;
     };
 
     convertKeysToCamelCase = (json) => {

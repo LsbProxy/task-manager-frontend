@@ -1,6 +1,7 @@
-import { some } from 'lodash';
+import { each, isEmpty, some } from 'lodash';
 import React, { useState, useContext } from 'react';
 import { Button, Col, Form, Row } from 'react-bootstrap';
+import { useHistory } from 'react-router-dom';
 
 import { LoaderContext } from '../../common/context/LoaderContextProvider';
 import authService from '../../common/services/AuthService/AuthService';
@@ -17,15 +18,20 @@ const RegisterPage = () => {
         errors: [],
     });
     const { showLoader } = useContext(LoaderContext);
+    const history = useHistory();
 
     const handleError = (err) => {
-        if (err && err.error) {
+        if (err && !isEmpty(err.error)) {
             setState((newState) => {
-                if (!some(newState.errors, (msg) => msg === err.error)) {
-                    return { ...newState, errors: [...newState.errors, err.error] };
-                }
+                const errors = [...newState.errors];
 
-                return newState;
+                each(err.error, (error) => {
+                    if (!some(newState.errors, (msg) => msg === error)) {
+                        errors.push(error);
+                    }
+                });
+
+                return { ...newState, errors };
             });
         }
     };
@@ -93,6 +99,11 @@ const RegisterPage = () => {
     };
 
     const handleChange = ({ target: { name, value } }) => setState({ ...state, [name]: value });
+
+    const redirectToLoginPage = (e) => {
+        e.stopPropagation();
+        history.push('/login');
+    };
 
     const { firstName, lastName, username, email, password, password2, errors } = state;
 
@@ -164,7 +175,10 @@ const RegisterPage = () => {
                             placeholder="Repeat password"
                         />
                     </Form.Group>
-                    <Button variant="primary" type="submit">
+                    <Button onClick={redirectToLoginPage} variant="outline-primary">
+                        Go Back to Login
+                    </Button>
+                    <Button variant="primary" type="submit" className="float-end">
                         Register
                     </Button>
                 </Form>
