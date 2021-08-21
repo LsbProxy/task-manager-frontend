@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { filter, first, map } from 'lodash';
+import { filter, map } from 'lodash';
 import { Button, Col, FloatingLabel, Form, Modal, Row } from 'react-bootstrap';
 
 import dashboardService from '../../common/services/DashboardService/DashboardService';
@@ -12,6 +12,7 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
         description: '',
         members: [],
         isLoading: false,
+        users: [],
     });
 
     const showLoader = (isLoading = false) => setState((newState) => ({ ...newState, isLoading }));
@@ -19,11 +20,11 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
     const fetchMembers = async () => {
         try {
             showLoader(true);
-            const users = await authService.getUsers();
+            const userList = await authService.getUsers();
 
-            const members = map(users, ({ username }) => username);
+            const users = map(userList, ({ username }) => username);
 
-            setState((newState) => ({ ...newState, assignedTo: first(members), members }));
+            setState((newState) => ({ ...newState, users }));
         } catch (e) {
             hideModal();
             handleError(e);
@@ -74,7 +75,7 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
     };
 
     const renderModalBody = () => {
-        const { title, description, members, isLoading } = state;
+        const { title, description, members, isLoading, users } = state;
 
         return (
             <Modal.Body style={{ minHeight: '300px' }}>
@@ -113,7 +114,7 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
                                     value={members}
                                     onChange={handleMembersChange}
                                 >
-                                    {map(members, (member) => (
+                                    {map(users, (member) => (
                                         <option key={member} value={member}>
                                             {member}
                                         </option>
