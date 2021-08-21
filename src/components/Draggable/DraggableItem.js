@@ -51,6 +51,7 @@ const itemTarget = {
         }
 
         // Determine rectangle on screen
+        // eslint-disable-next-line react/no-find-dom-node
         const hoverBoundingRect = findDOMNode(component).getBoundingClientRect();
 
         // Get vertical middle
@@ -84,6 +85,7 @@ const itemTarget = {
             // Generally it's better to avoid mutations,
             // but it's good here for the sake of performance
             // to avoid expensive index searches.
+            // eslint-disable-next-line no-param-reassign
             monitor.getItem().index = hoverIndex;
         }
     },
