@@ -26,16 +26,17 @@ class Dashboard extends Component {
     fetchData = async () => {
         const {
             dashboard: { id },
+            handleError,
         } = this.props;
 
         try {
             this.showLoader(true);
             const dashboard = await dashboardService.getDashboard(id);
             this.setState({ dashboard });
-            this.showLoader();
         } catch (e) {
+            handleError(e);
+        } finally {
             this.showLoader();
-            console.log(e);
         }
     };
 
@@ -73,7 +74,8 @@ class Dashboard extends Component {
     };
 
     deleteDashboard = async (e) => {
-        const { updateDashboardInGrid, dashboard, showLoader } = this.props;
+        const { updateDashboardInGrid, dashboard, showLoader, handleError, addNotification } =
+            this.props;
 
         try {
             e.stopPropagation();
@@ -82,10 +84,11 @@ class Dashboard extends Component {
             await dashboardService.deleteDashboard(dashboard.id);
             const { sprints, ...rest } = dashboard;
             updateDashboardInGrid({ ...rest }, true);
-            showLoader(false);
+            addNotification(`Successfully deleted ${dashboard.title}`);
         } catch (err) {
+            handleError(err);
+        } finally {
             showLoader(false);
-            console.log(err);
         }
     };
 
@@ -102,10 +105,12 @@ class Dashboard extends Component {
                 },
                 this.hideModal,
             );
-            this.showLoader(false);
+
+            this.props.addNotification(`Successfully updated ${updatedDashboard.title}`);
         } catch (e) {
+            this.props.handleError(e);
+        } finally {
             this.showLoader(false);
-            console.log(e);
         }
     };
 

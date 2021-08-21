@@ -5,6 +5,7 @@ import { useRouteMatch } from 'react-router-dom';
 
 import { LoaderContext } from '../../common/context/LoaderContextProvider';
 import { ModalContext } from '../../common/context/ModalContextProvider';
+import { NotificationContext } from '../../common/context/NotificationContextProvider';
 import sprintService from '../../common/services/SprintService/SprintService';
 import taskService from '../../common/services/TaskService/TaskService';
 import redirectToHomePage from '../../common/utils/redirectToHomePage';
@@ -46,7 +47,7 @@ class TaskGrid extends Component {
     }
 
     fetchSprint = async () => {
-        const { showLoader } = this.props;
+        const { showLoader, handleError } = this.props;
         try {
             const {
                 match: {
@@ -59,20 +60,25 @@ class TaskGrid extends Component {
             showLoader(true);
             const sprint = await sprintService.getSprint(id);
             this.setState({ sprint });
-            showLoader(false);
         } catch (e) {
-            console.log(e);
+            handleError(e);
+        } finally {
+            showLoader(false);
         }
     };
 
     openCreateTaskModal = () => {
-        this.props.setModalState({
+        const { handleError, setModalState, addNotification } = this.props;
+
+        setModalState({
             show: true,
             ModalContentComponent: (props) => (
                 <CreateTaskModal
                     dashboardId={get(this.state, 'sprint.dashboard')}
                     sprintId={get(this.state, 'sprint.id')}
                     refreshGrid={this.fetchSprint}
+                    handleError={handleError}
+                    addNotification={addNotification}
                     {...props}
                 />
             ),
@@ -80,7 +86,7 @@ class TaskGrid extends Component {
     };
 
     updateTaskStatus = async (newStatus, { item }) => {
-        const { showLoader } = this.props;
+        const { showLoader, handleError } = this.props;
 
         try {
             const { sprint } = this.state;
@@ -95,10 +101,10 @@ class TaskGrid extends Component {
             await taskService.updateTask(updatedTask);
 
             this.setState(newState);
-            showLoader(false);
         } catch (e) {
+            handleError(e);
+        } finally {
             showLoader(false);
-            console.log(e);
         }
     };
 
@@ -132,7 +138,10 @@ class TaskGrid extends Component {
                     <DraggableContainer
                         id={column}
                         items={filter(tasks, (task) => task.status === column)}
-                        itemProps={{ updateTaskInGrid: this.updateTaskInGrid }}
+                        itemProps={{
+                            updateTaskInGrid: this.updateTaskInGrid,
+                            addNotification: this.props.addNotification,
+                        }}
                         ItemComponent={Task}
                         updateItem={this.updateTaskStatus}
                         handleChange={this.updateTaskInGrid}
@@ -185,20 +194,26 @@ class TaskGrid extends Component {
 export default () => {
     const match = useRouteMatch();
     return (
-        <ModalContext.Consumer>
-            {({ state: modal, setState: setModalState }) => (
-                <LoaderContext.Consumer>
-                    {({ isLoading, showLoader }) => (
-                        <TaskGrid
-                            isLoading={isLoading}
-                            showLoader={showLoader}
-                            setModalState={setModalState}
-                            modal={modal}
-                            match={match}
-                        />
+        <NotificationContext.Consumer>
+            {({ handleError, addNotification }) => (
+                <ModalContext.Consumer>
+                    {({ state: modal, setState: setModalState }) => (
+                        <LoaderContext.Consumer>
+                            {({ isLoading, showLoader }) => (
+                                <TaskGrid
+                                    isLoading={isLoading}
+                                    showLoader={showLoader}
+                                    setModalState={setModalState}
+                                    modal={modal}
+                                    match={match}
+                                    handleError={handleError}
+                                    addNotification={addNotification}
+                                />
+                            )}
+                        </LoaderContext.Consumer>
                     )}
-                </LoaderContext.Consumer>
+                </ModalContext.Consumer>
             )}
-        </ModalContext.Consumer>
+        </NotificationContext.Consumer>
     );
 };

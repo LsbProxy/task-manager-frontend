@@ -4,7 +4,13 @@ import { Button, FloatingLabel, Form, Modal } from 'react-bootstrap';
 import Loader from '../Loader/Loader';
 import sprintService from '../../common/services/SprintService/SprintService';
 
-const CreateSprintModal = ({ hideModal, refreshGrid, dashboardId }) => {
+const CreateSprintModal = ({
+    hideModal,
+    refreshGrid,
+    dashboardId,
+    handleError,
+    addNotification,
+}) => {
     const [state, setState] = useState({
         title: '',
         description: '',
@@ -29,10 +35,11 @@ const CreateSprintModal = ({ hideModal, refreshGrid, dashboardId }) => {
             });
             hideModal();
             refreshGrid();
-            showLoader();
+            addNotification(`Successfully created ${title}`);
         } catch (e) {
+            handleError(e);
+        } finally {
             showLoader();
-            console.log(e);
         }
     };
 

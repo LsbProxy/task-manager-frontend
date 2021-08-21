@@ -6,7 +6,7 @@ import dashboardService from '../../common/services/DashboardService/DashboardSe
 import Loader from '../Loader/Loader';
 import authService from '../../common/services/AuthService/AuthService';
 
-const CreateDashboardModal = ({ hideModal, refreshGrid }) => {
+const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotification }) => {
     const [state, setState] = useState({
         title: '',
         description: '',
@@ -24,10 +24,11 @@ const CreateDashboardModal = ({ hideModal, refreshGrid }) => {
             const members = map(users, ({ username }) => username);
 
             setState((newState) => ({ ...newState, assignedTo: first(members), members }));
-            showLoader(false);
         } catch (e) {
+            hideModal();
+            handleError(e);
+        } finally {
             showLoader(false);
-            console.log(e);
         }
     };
 
@@ -62,12 +63,13 @@ const CreateDashboardModal = ({ hideModal, refreshGrid }) => {
                 description,
                 members,
             });
-            hideModal();
+            addNotification(`Successfully created ${title}`);
             refreshGrid();
-            showLoader();
         } catch (e) {
+            handleError(e);
+        } finally {
             showLoader();
-            console.log(e);
+            hideModal();
         }
     };
 

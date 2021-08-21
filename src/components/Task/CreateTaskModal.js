@@ -17,7 +17,14 @@ import taskStatus from '../../common/utils/taskStatus';
 import dashboardService from '../../common/services/DashboardService/DashboardService';
 import Loader from '../Loader/Loader';
 
-const CreateTaskModal = ({ dashboardId, sprintId, hideModal, refreshGrid }) => {
+const CreateTaskModal = ({
+    dashboardId,
+    sprintId,
+    hideModal,
+    refreshGrid,
+    handleError,
+    addNotification,
+}) => {
     const [state, setState] = useState({
         author: '',
         assignedTo: '',
@@ -36,10 +43,10 @@ const CreateTaskModal = ({ dashboardId, sprintId, hideModal, refreshGrid }) => {
             showLoader(true);
             const { members } = await dashboardService.getDashboard(dashboardId);
             setState((newState) => ({ ...newState, assignedtTo: members[0], members }));
-            showLoader(false);
         } catch (e) {
+            handleError(e);
+        } finally {
             showLoader(false);
-            console.log(e);
         }
     };
 
@@ -70,10 +77,11 @@ const CreateTaskModal = ({ dashboardId, sprintId, hideModal, refreshGrid }) => {
             });
             hideModal();
             refreshGrid();
-            showLoader();
+            addNotification(`Successfully created ${title}`);
         } catch (e) {
+            handleError(e);
+        } finally {
             showLoader();
-            console.log(e);
         }
     };
 

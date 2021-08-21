@@ -1,9 +1,10 @@
 import { filter, findIndex, get, isEmpty } from 'lodash';
 import React, { Component } from 'react';
 import { Button, Col, Row, ToastContainer } from 'react-bootstrap';
+
 import { LoaderContext } from '../../common/context/LoaderContextProvider';
 import { ModalContext } from '../../common/context/ModalContextProvider';
-
+import { NotificationContext } from '../../common/context/NotificationContextProvider';
 import dashboardService from '../../common/services/DashboardService/DashboardService';
 import CreateDashboardModal from './CreateDashboardModal';
 import Dashboard from './Dashboard';
@@ -28,13 +29,14 @@ class DashboardList extends Component {
     }
 
     fetchDashboards = async () => {
-        const { showLoader } = this.props;
+        const { showLoader, handleError } = this.props;
         try {
             const dashboards = await dashboardService.listDashboards();
             this.setState({ dashboards });
-            showLoader(false);
         } catch (e) {
-            console.log(e);
+            handleError(e);
+        } finally {
+            showLoader(false);
         }
     };
 
@@ -53,17 +55,24 @@ class DashboardList extends Component {
     };
 
     openCreateDashboardModal = () => {
-        this.props.setModalState({
+        const { handleError, setModalState, addNotification } = this.props;
+
+        setModalState({
             show: true,
             ModalContentComponent: (props) => (
-                <CreateDashboardModal refreshGrid={this.fetchDashboards} {...props} />
+                <CreateDashboardModal
+                    refreshGrid={this.fetchDashboards}
+                    handleError={handleError}
+                    addNotification={addNotification}
+                    {...props}
+                />
             ),
         });
     };
 
     renderDashboards = () => {
         const { dashboards } = this.state;
-        const { showLoader } = this.props;
+        const { showLoader, handleError, addNotification } = this.props;
 
         if (isEmpty(dashboards)) {
             return 'No Dashboards';
@@ -75,6 +84,8 @@ class DashboardList extends Component {
                 dashboard={dashboard}
                 updateDashboardInGrid={this.updateDashboardInGrid}
                 showLoader={showLoader}
+                handleError={handleError}
+                addNotification={addNotification}
             />
         ));
     };
@@ -106,18 +117,24 @@ class DashboardList extends Component {
 }
 
 export default () => (
-    <ModalContext.Consumer>
-        {({ state: modal, setState: setModalState }) => (
-            <LoaderContext.Consumer>
-                {({ isLoading, showLoader }) => (
-                    <DashboardList
-                        isLoading={isLoading}
-                        showLoader={showLoader}
-                        setModalState={setModalState}
-                        modal={modal}
-                    />
+    <NotificationContext.Consumer>
+        {({ handleError, addNotification }) => (
+            <ModalContext.Consumer>
+                {({ state: modal, setState: setModalState }) => (
+                    <LoaderContext.Consumer>
+                        {({ isLoading, showLoader }) => (
+                            <DashboardList
+                                isLoading={isLoading}
+                                showLoader={showLoader}
+                                setModalState={setModalState}
+                                modal={modal}
+                                handleError={handleError}
+                                addNotification={addNotification}
+                            />
+                        )}
+                    </LoaderContext.Consumer>
                 )}
-            </LoaderContext.Consumer>
+            </ModalContext.Consumer>
         )}
-    </ModalContext.Consumer>
+    </NotificationContext.Consumer>
 );

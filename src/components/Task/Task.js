@@ -45,16 +45,16 @@ class Task extends Component {
     }
 
     fetchData = async () => {
-        const { id } = this.props;
+        const { id, handleError } = this.props;
 
         try {
             this.showLoader(true);
             const task = await taskService.getTask(id);
             this.setState({ task });
-            this.showLoader();
         } catch (e) {
+            handleError(e);
+        } finally {
             this.showLoader();
-            console.log(e);
         }
     };
 
@@ -82,17 +82,19 @@ class Task extends Component {
     };
 
     deleteTask = async () => {
+        const { updateTaskInGrid, handleError, addNotification } = this.props;
+
         try {
-            const { updateTaskInGrid } = this.props;
             const { task } = this.state;
 
             this.showLoader(true);
             await taskService.deleteTask(task.id);
             updateTaskInGrid(task, true);
-            this.showLoader();
+            addNotification(`Successfully deleted ${task.title}`);
         } catch (e) {
+            handleError(e);
+        } finally {
             this.showLoader();
-            console.log(e);
         }
     };
 
@@ -104,10 +106,11 @@ class Task extends Component {
             const updatedTask = await taskService.updateTask(task);
 
             this.setState({ task: updatedTask, focusDescription: false, focusTitle: false });
-            this.showLoader();
+            this.props.addNotification(`Successfully updated ${updatedTask.title}`);
         } catch (e) {
+            this.props.handleError(e);
+        } finally {
             this.showLoader();
-            console.log(e);
         }
     };
 
@@ -125,10 +128,10 @@ class Task extends Component {
             this.showLoader(true);
             const comment = await commentService.createComment(newComment);
             this.setState({ task: { comments: [...task.comments, comment] }, comment: '' });
-            this.showLoader();
         } catch (e) {
+            this.props.handleError(e);
+        } finally {
             this.showLoader();
-            console.log(e);
         }
     };
 

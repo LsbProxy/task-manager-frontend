@@ -4,7 +4,7 @@ import { Button, Col, Row, ToastContainer } from 'react-bootstrap';
 import { useRouteMatch } from 'react-router-dom';
 import { LoaderContext } from '../../common/context/LoaderContextProvider';
 import { ModalContext } from '../../common/context/ModalContextProvider';
-
+import { NotificationContext } from '../../common/context/NotificationContextProvider';
 import dashboardService from '../../common/services/DashboardService/DashboardService';
 import redirectToHomePage from '../../common/utils/redirectToHomePage';
 import CreateSprintModal from './CreateSprintModal';
@@ -48,7 +48,7 @@ class SprintList extends Component {
     }
 
     fetchDashboard = async () => {
-        const { showLoader } = this.props;
+        const { showLoader, handleError } = this.props;
         try {
             const {
                 match: {
@@ -61,9 +61,10 @@ class SprintList extends Component {
             showLoader(true);
             const dashboard = await dashboardService.getDashboard(id);
             this.setState({ dashboard });
-            showLoader(false);
         } catch (e) {
-            console.log(e);
+            handleError(e);
+        } finally {
+            showLoader(false);
         }
     };
 
@@ -82,13 +83,17 @@ class SprintList extends Component {
     };
 
     openCreateSprintModal = () => {
-        this.props.setModalState({
+        const { handleError, setModalState, addNotification } = this.props;
+
+        setModalState({
             show: true,
             ModalContentComponent: (props) => (
                 <CreateSprintModal
                     {...props}
                     refreshGrid={this.fetchDashboard}
                     dashboardId={get(this.state, 'dashboard.id')}
+                    handleError={handleError}
+                    addNotification={addNotification}
                 />
             ),
         });
@@ -98,7 +103,7 @@ class SprintList extends Component {
         const {
             dashboard: { sprints },
         } = this.state;
-        const { showLoader } = this.props;
+        const { showLoader, handleError, addNotification } = this.props;
 
         if (isEmpty(sprints)) {
             return 'No Sprints';
@@ -110,6 +115,8 @@ class SprintList extends Component {
                 sprint={sprint}
                 updateSprintInGrid={this.updateSprintInGrid}
                 showLoader={showLoader}
+                handleError={handleError}
+                addNotification={addNotification}
             />
         ));
     };
@@ -143,20 +150,26 @@ class SprintList extends Component {
 export default () => {
     const match = useRouteMatch();
     return (
-        <ModalContext.Consumer>
-            {({ state: modal, setState: setModalState }) => (
-                <LoaderContext.Consumer>
-                    {({ isLoading, showLoader }) => (
-                        <SprintList
-                            isLoading={isLoading}
-                            showLoader={showLoader}
-                            setModalState={setModalState}
-                            modal={modal}
-                            match={match}
-                        />
+        <NotificationContext.Consumer>
+            {({ handleError, addNotification }) => (
+                <ModalContext.Consumer>
+                    {({ state: modal, setState: setModalState }) => (
+                        <LoaderContext.Consumer>
+                            {({ isLoading, showLoader }) => (
+                                <SprintList
+                                    isLoading={isLoading}
+                                    showLoader={showLoader}
+                                    setModalState={setModalState}
+                                    modal={modal}
+                                    match={match}
+                                    handleError={handleError}
+                                    addNotification={addNotification}
+                                />
+                            )}
+                        </LoaderContext.Consumer>
                     )}
-                </LoaderContext.Consumer>
+                </ModalContext.Consumer>
             )}
-        </ModalContext.Consumer>
+        </NotificationContext.Consumer>
     );
 };

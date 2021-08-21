@@ -1,10 +1,11 @@
 import React, { Component } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+
 import LoaderContextProvider from './common/context/LoaderContextProvider';
 import ModalContextProvider from './common/context/ModalContextProvider';
+import NotificationContextProvider from './common/context/NotificationContextProvider';
 import autoRefreshToken from './common/utils/autoRefreshToken';
 import idleCounter from './common/utils/idleCounter';
-
 import ErrorModal from './components/Errors/ErrorModal';
 import Router from './components/Router/Router';
 
@@ -29,13 +30,15 @@ class App extends Component {
     render() {
         return (
             <div className="App">
-                <ModalContextProvider>
-                    <LoaderContextProvider>
-                        <ErrorBoundary FallbackComponent={ErrorModal}>
-                            <Router />
-                        </ErrorBoundary>
-                    </LoaderContextProvider>
-                </ModalContextProvider>
+                <NotificationContextProvider>
+                    <ModalContextProvider>
+                        <LoaderContextProvider>
+                            <ErrorBoundary FallbackComponent={ErrorModal}>
+                                <Router />
+                            </ErrorBoundary>
+                        </LoaderContextProvider>
+                    </ModalContextProvider>
+                </NotificationContextProvider>
             </div>
         );
     }

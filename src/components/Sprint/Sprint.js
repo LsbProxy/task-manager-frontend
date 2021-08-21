@@ -25,16 +25,17 @@ class Sprint extends Component {
     fetchData = async () => {
         const {
             sprint: { id },
+            handleError,
         } = this.props;
 
         try {
             this.showLoader(true);
             const sprint = await sprintService.getSprint(id);
             this.setState({ sprint });
-            this.showLoader();
         } catch (e) {
+            handleError(e);
+        } finally {
             this.showLoader();
-            console.log(e);
         }
     };
 
@@ -57,7 +58,7 @@ class Sprint extends Component {
     };
 
     deleteSprint = async (e) => {
-        const { updateSprintInGrid, sprint, showLoader } = this.props;
+        const { updateSprintInGrid, sprint, showLoader, handleError, addNotification } = this.props;
 
         try {
             e.stopPropagation();
@@ -66,10 +67,11 @@ class Sprint extends Component {
             await sprintService.deleteSprint(sprint.id);
             const { sprints, ...rest } = sprint;
             updateSprintInGrid({ ...rest }, true);
-            showLoader(false);
+            addNotification(`Successfully deleted ${sprint.title}`);
         } catch (err) {
+            handleError(err);
+        } finally {
             showLoader(false);
-            console.log(err);
         }
     };
 
@@ -86,10 +88,11 @@ class Sprint extends Component {
                 },
                 this.hideModal,
             );
-            this.showLoader(false);
+            this.props.addNotification(`Successfully updated ${updatedSprint.title}`);
         } catch (e) {
+            this.props.handleError(e);
+        } finally {
             this.showLoader(false);
-            console.log(e);
         }
     };
 
