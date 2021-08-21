@@ -1,6 +1,7 @@
 import HttpService from '../HttpService/HttpService';
 
 const routes = {
+    register: 'register/',
     login: 'login/',
     refresh: 'login/refresh/',
     users: 'users/',
@@ -13,6 +14,16 @@ class AuthService {
     }
 
     login = async (email, password) => this.HttpService.post(routes.login, { email, password });
+
+    register = async (username, password, password2, email, firstName, lastName) =>
+        this.HttpService.post(routes.register, {
+            username,
+            password,
+            password2,
+            email,
+            firstName,
+            lastName,
+        });
 
     refreshToken = async (refresh) => this.AuthorizedHttpService.post(routes.refresh, { refresh });
 

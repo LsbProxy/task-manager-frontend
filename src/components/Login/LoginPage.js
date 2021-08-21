@@ -1,14 +1,16 @@
 import { some } from 'lodash';
 import React, { useState, useContext } from 'react';
 import { Button, Col, Form, Row } from 'react-bootstrap';
-import { LoaderContext } from '../../common/context/LoaderContextProvider';
+import { useHistory } from 'react-router-dom';
 
+import { LoaderContext } from '../../common/context/LoaderContextProvider';
 import authService from '../../common/services/AuthService/AuthService';
 import ErrorAlertList from '../Errors/ErrorAlertList';
 
 const LoginPage = () => {
     const [state, setState] = useState({ email: '', password: '', errors: [] });
     const { showLoader } = useContext(LoaderContext);
+    const history = useHistory();
 
     const handleError = (err) => {
         if (err && err.error) {
@@ -69,11 +71,19 @@ const LoginPage = () => {
 
     const handleChange = ({ target: { name, value } }) => setState({ ...state, [name]: value });
 
+    const redirectToRegisterPage = (e) => {
+        e.stopPropagation();
+        history.push('/register');
+    };
+
     return (
-        <Row className="padd-top-sml justify-content-center mt-5">
+        <Row className="justify-content-center mt-5 pb-5">
             <Col lg="3" md="5">
                 <ErrorAlertList errors={state.errors} />
                 <Form onSubmit={handleLogin}>
+                    <h3 className="py-3">
+                        <strong>Login</strong>
+                    </h3>
                     <Form.Group className="mb-3" controlId="formBasicEmail">
                         <Form.Label>Email address</Form.Label>
                         <Form.Control
@@ -96,6 +106,13 @@ const LoginPage = () => {
                     </Form.Group>
                     <Button variant="primary" type="submit">
                         Login
+                    </Button>
+                    <Button
+                        onClick={redirectToRegisterPage}
+                        variant="outline-primary"
+                        className="float-end"
+                    >
+                        Register
                     </Button>
                 </Form>
             </Col>
