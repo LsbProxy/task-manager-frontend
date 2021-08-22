@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { isEmpty } from 'lodash';
 import { Button, FloatingLabel, Form, Modal } from 'react-bootstrap';
 
 import Loader from '../Loader/Loader';
 import sprintService from '../../common/services/SprintService/SprintService';
+import ErrorAlertList from '../Errors/ErrorAlertList';
 
 const CreateSprintModal = ({
     hideModal,
@@ -15,6 +17,8 @@ const CreateSprintModal = ({
         title: '',
         description: '',
         isLoading: false,
+        isSubmit: false,
+        errors: [],
     });
 
     const showLoader = (isLoading = false) => setState((newState) => ({ ...newState, isLoading }));
@@ -23,7 +27,24 @@ const CreateSprintModal = ({
         setState({ ...state, [name]: value });
     };
 
+    const validateSprint = () => {
+        const { title } = state;
+        const errors = [];
+
+        if (!title) {
+            errors.push('Title');
+        }
+
+        setState((newState) => ({ ...newState, isSubmit: true, errors }));
+
+        return isEmpty(errors);
+    };
+
     const handleCreateSprint = async () => {
+        if (!validateSprint()) {
+            return;
+        }
+
         try {
             const { title, description } = state;
 
@@ -44,7 +65,7 @@ const CreateSprintModal = ({
     };
 
     const renderModalBody = () => {
-        const { title, description, isLoading } = state;
+        const { title, description, isLoading, errors } = state;
 
         return (
             <Modal.Body style={{ minHeight: '300px' }}>
@@ -52,6 +73,7 @@ const CreateSprintModal = ({
                     <Loader />
                 ) : (
                     <Form>
+                        <ErrorAlertList errors={errors} />
                         <Form.Control
                             type="text"
                             placeholder="Title"
@@ -79,13 +101,22 @@ const CreateSprintModal = ({
         );
     };
 
-    const renderModalFooter = () => (
-        <Modal.Footer>
-            <Button className="mt-2" variant="primary" onClick={handleCreateSprint}>
-                Create
-            </Button>
-        </Modal.Footer>
-    );
+    const renderModalFooter = () => {
+        const { title, isSubmit } = state;
+
+        return (
+            <Modal.Footer>
+                <Button
+                    className="mt-2"
+                    variant="primary"
+                    onClick={handleCreateSprint}
+                    disabled={isSubmit && !title}
+                >
+                    Create
+                </Button>
+            </Modal.Footer>
+        );
+    };
 
     const renderModalHeader = () => (
         <Modal.Header closeButton>

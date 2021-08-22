@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { map } from 'lodash';
+import { isEmpty, map } from 'lodash';
 import {
     Button,
     Col,
@@ -16,6 +16,7 @@ import taskService from '../../common/services/TaskService/TaskService';
 import taskStatus from '../../common/utils/taskStatus';
 import dashboardService from '../../common/services/DashboardService/DashboardService';
 import Loader from '../Loader/Loader';
+import ErrorAlertList from '../Errors/ErrorAlertList';
 
 const CreateTaskModal = ({
     dashboardId,
@@ -34,6 +35,8 @@ const CreateTaskModal = ({
         members: [],
         user: JSON.parse(window.localStorage.getItem('user')),
         isLoading: false,
+        isSubmit: false,
+        errors: [],
     });
 
     const showLoader = (isLoading = false) => setState((newState) => ({ ...newState, isLoading }));
@@ -61,7 +64,24 @@ const CreateTaskModal = ({
     const handleDropdownItemClick = (name, value) => () =>
         handleChange({ target: { name, value } });
 
+    const validateTask = () => {
+        const { title } = state;
+        const errors = [];
+
+        if (!title) {
+            errors.push('Title');
+        }
+
+        setState((newState) => ({ ...newState, isSubmit: true, errors }));
+
+        return isEmpty(errors);
+    };
+
     const handleCreateTask = async () => {
+        if (!validateTask()) {
+            return;
+        }
+
         try {
             const { title, description, assignedTo, status, user } = state;
 
@@ -86,7 +106,7 @@ const CreateTaskModal = ({
     };
 
     const renderModalBody = () => {
-        const { title, description, assignedTo, status, isLoading } = state;
+        const { title, description, assignedTo, status, isLoading, errors } = state;
 
         return (
             <Modal.Body style={{ minHeight: '300px' }}>
@@ -94,6 +114,7 @@ const CreateTaskModal = ({
                     <Loader />
                 ) : (
                     <Form>
+                        <ErrorAlertList errors={errors} />
                         <Form.Control
                             type="text"
                             placeholder="Title"
@@ -157,13 +178,22 @@ const CreateTaskModal = ({
         );
     };
 
-    const renderModalFooter = () => (
-        <Modal.Footer>
-            <Button className="mt-2" variant="primary" onClick={handleCreateTask}>
-                Create
-            </Button>
-        </Modal.Footer>
-    );
+    const renderModalFooter = () => {
+        const { isSubmit, title } = state;
+
+        return (
+            <Modal.Footer>
+                <Button
+                    className="mt-2"
+                    variant="primary"
+                    onClick={handleCreateTask}
+                    disabled={isSubmit && !title}
+                >
+                    Create
+                </Button>
+            </Modal.Footer>
+        );
+    };
 
     const renderModalHeader = () => (
         <Modal.Header closeButton>

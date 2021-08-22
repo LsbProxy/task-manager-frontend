@@ -49,11 +49,11 @@ const LoginPage = () => {
         const errorList = [];
 
         if (!email) {
-            errorList.push('Email is required.');
+            errorList.push('Email');
         }
 
         if (!password) {
-            errorList.push('Password is required.');
+            errorList.push('Password');
         }
 
         setState({ ...state, errors: errorList });

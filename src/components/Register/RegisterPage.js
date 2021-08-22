@@ -56,27 +56,27 @@ const RegisterPage = () => {
         const errorList = [];
 
         if (!firstName) {
-            errorList.push('First name is required.');
+            errorList.push('First name');
         }
 
         if (!lastName) {
-            errorList.push('Last name is required.');
+            errorList.push('Last name');
         }
 
         if (!email) {
-            errorList.push('Email is required.');
+            errorList.push('Email');
         }
 
         if (!username) {
-            errorList.push('Username is required.');
+            errorList.push('Username');
         }
 
         if (!password) {
-            errorList.push('Password is required.');
+            errorList.push('Password');
         }
 
         if (!password2) {
-            errorList.push('Repeat password is required.');
+            errorList.push('Repeat password');
         } else if (password !== password2) {
             errorList.push('Passwords must match.');
         }

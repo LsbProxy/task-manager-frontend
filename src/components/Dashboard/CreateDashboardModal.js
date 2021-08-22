@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { filter, map } from 'lodash';
+import { filter, isEmpty, map } from 'lodash';
 import { Button, Col, FloatingLabel, Form, Modal, Row } from 'react-bootstrap';
 
 import dashboardService from '../../common/services/DashboardService/DashboardService';
 import Loader from '../Loader/Loader';
 import authService from '../../common/services/AuthService/AuthService';
+import ErrorAlertList from '../Errors/ErrorAlertList';
 
 const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotification }) => {
     const [state, setState] = useState({
@@ -13,6 +14,8 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
         members: [],
         isLoading: false,
         users: [],
+        isSubmit: false,
+        errors: [],
     });
 
     const showLoader = (isLoading = false) => setState((newState) => ({ ...newState, isLoading }));
@@ -37,6 +40,23 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
         fetchMembers();
     }, []);
 
+    const validateDashboard = () => {
+        const { title, members } = state;
+        const errors = [];
+
+        if (!title) {
+            errors.push('Title');
+        }
+
+        if (isEmpty(members)) {
+            errors.push('Members');
+        }
+
+        setState((newState) => ({ ...newState, isSubmit: true, errors }));
+
+        return isEmpty(errors);
+    };
+
     const handleChange = ({ target: { name, value } }) => {
         setState({ ...state, [name]: value });
     };
@@ -55,6 +75,10 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
     };
 
     const handleCreateDashboard = async () => {
+        if (!validateDashboard()) {
+            return;
+        }
+
         try {
             const { title, description, members } = state;
 
@@ -75,7 +99,7 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
     };
 
     const renderModalBody = () => {
-        const { title, description, members, isLoading, users } = state;
+        const { title, description, members, isLoading, users, errors } = state;
 
         return (
             <Modal.Body style={{ minHeight: '300px' }}>
@@ -83,6 +107,7 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
                     <Loader />
                 ) : (
                     <Form>
+                        <ErrorAlertList errors={errors} />
                         <Form.Control
                             type="text"
                             placeholder="Title"
@@ -128,13 +153,22 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
         );
     };
 
-    const renderModalFooter = () => (
-        <Modal.Footer>
-            <Button className="mt-2" variant="primary" onClick={handleCreateDashboard}>
-                Create
-            </Button>
-        </Modal.Footer>
-    );
+    const renderModalFooter = () => {
+        const { title, members, isSubmit } = state;
+
+        return (
+            <Modal.Footer>
+                <Button
+                    className="mt-2"
+                    variant="primary"
+                    disabled={isSubmit && (!title || isEmpty(members))}
+                    onClick={handleCreateDashboard}
+                >
+                    Create
+                </Button>
+            </Modal.Footer>
+        );
+    };
 
     const renderModalHeader = () => (
         <Modal.Header closeButton>
