@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { map, split } from 'lodash';
+import { findIndex, isEmpty, map, split } from 'lodash';
 import {
     Button,
     Card,
@@ -41,6 +41,10 @@ class Task extends Component {
             focusTitle: false,
             focusDescription: false,
             focusComment: false,
+            editComment: {
+                id: null,
+                content: '',
+            },
         };
     }
 
@@ -127,12 +131,56 @@ class Task extends Component {
 
             this.showLoader(true);
             const comment = await commentService.createComment(newComment);
-            this.setState({ task: { comments: [...task.comments, comment] }, comment: '' });
+            this.setState({
+                task: { ...task, comments: [...task.comments, comment] },
+                comment: '',
+                focusComment: false,
+            });
         } catch (e) {
             this.props.handleError(e);
         } finally {
             this.showLoader();
         }
+    };
+
+    editComment = async () => {
+        try {
+            const {
+                editComment,
+                task: { comments },
+            } = this.state;
+            const index = findIndex(comments, ({ id }) => id === editComment.id);
+
+            if (index < 0) {
+                return;
+            }
+
+            const updatedComment = { ...comments[index], ...editComment };
+
+            this.showLoader(true);
+            const comment = await commentService.updateComment(updatedComment);
+
+            const newState = { editComment: {}, task: this.updateTaskComments(index, comment) };
+
+            this.setState(newState);
+            this.props.addNotification('Successfully updated comment');
+        } catch (e) {
+            this.props.handleError(e);
+        } finally {
+            this.showLoader();
+        }
+    };
+
+    updateTaskComments = (index, comment) => {
+        const task = { ...this.state.task };
+
+        if (!isEmpty(comment)) {
+            task.comments[index] = comment;
+        } else {
+            task.comments.splice(index, 1);
+        }
+
+        return task;
     };
 
     focusInput =
@@ -146,6 +194,38 @@ class Task extends Component {
     openTaskModal = async () => {
         this.setState({ show: true }, this.fetchData);
     };
+
+    handleEditComment = (id, content) => () => this.setState({ editComment: { id, content } });
+
+    handleDeleteComment = (id) => async () => {
+        const { handleError, addNotification } = this.props;
+
+        try {
+            const {
+                task: { comments },
+            } = this.state;
+            const index = findIndex(comments, (comment) => id === comment.id);
+
+            if (index < 0) {
+                return;
+            }
+
+            this.showLoader(true);
+            await commentService.deleteComment(id);
+
+            const newState = { task: this.updateTaskComments(index) };
+
+            this.setState(newState);
+
+            addNotification('Successfully deleted comment');
+        } catch (e) {
+            handleError(e);
+        } finally {
+            this.showLoader();
+        }
+    };
+
+    cancelEditComment = () => this.setState({ editComment: { id: null, content: '' } });
 
     hideModal = () => {
         const { task } = this.state;
@@ -234,7 +314,7 @@ class Task extends Component {
                 <Col>
                     <OutsideClickHandler onOutsideClick={this.focusInput('focusDescription')}>
                         <Form onSubmit={this.handleSubmit}>
-                            <FloatingLabel controlId="floatingTextarea2" label="Description">
+                            <FloatingLabel controlId="floatingTextarea1" label="Description">
                                 <Form.Control
                                     as="textarea"
                                     style={{ height: '300px' }}
@@ -262,6 +342,34 @@ class Task extends Component {
         );
     };
 
+    renderCommentActionButtons = (author, id, content) => {
+        const {
+            user: { username: currentUser },
+        } = this.state;
+
+        return (
+            currentUser === author && (
+                <div className="float-end">
+                    <Button
+                        className="mx-1"
+                        size="sm"
+                        variant="outline-secondary"
+                        onClick={this.handleEditComment(id, content)}
+                    >
+                        Edit
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline-danger"
+                        onClick={this.handleDeleteComment(id)}
+                    >
+                        Delete
+                    </Button>
+                </div>
+            )
+        );
+    };
+
     renderComments = () => {
         const {
             task: { comments },
@@ -273,26 +381,68 @@ class Task extends Component {
                     <strong>Comments</strong>
                 </Col>
                 <Col>
-                    {map(comments, ({ author, content, createdDate }) => (
-                        <Card key={`${author}.${createdDate}`} className="mt-2">
-                            <Card.Header>
-                                <small>
-                                    <strong>{author}</strong>
-                                </small>
-                                <small className="float-end">
-                                    {new Date(createdDate).toLocaleString()}
-                                </small>
-                            </Card.Header>
-                            <Card.Body>
-                                <Row>
-                                    <Col className="text-wrap">{content}</Col>
-                                </Row>
-                            </Card.Body>
-                        </Card>
-                    ))}
+                    {map(comments, ({ author, content, createdDate, updatedDate, id }) => {
+                        const created = new Date(createdDate).toLocaleString();
+                        const edited = new Date(updatedDate).toLocaleString();
+
+                        return (
+                            <Card key={`${author}.${createdDate}`} className="mt-2">
+                                <Card.Header>
+                                    <div className="float-start">
+                                        <small>
+                                            <strong>{author}</strong>
+                                        </small>
+                                        <small className="px-2 text-secondary">{created}</small>
+                                        {created !== edited && (
+                                            <small className="px-2 text-info">
+                                                edited: {edited}
+                                            </small>
+                                        )}
+                                    </div>
+                                    {this.renderCommentActionButtons(author, id, content)}
+                                </Card.Header>
+                                {this.renderCommentBody(content, id)}
+                            </Card>
+                        );
+                    })}
                     {this.renderNewComment()}
                 </Col>
             </Row>
+        );
+    };
+
+    renderCommentBody = (content, id) => {
+        const { editComment, isLoading } = this.state;
+
+        return (
+            <Card.Body>
+                <Row>
+                    <Col className="text-wrap">
+                        {editComment.id === id ? (
+                            <OutsideClickHandler onOutsideClick={this.cancelEditComment}>
+                                <Form.Control
+                                    as="textarea"
+                                    placeholder="Leave a comment here..."
+                                    style={{ height: '100px' }}
+                                    name="editComment.content"
+                                    value={editComment.content}
+                                    onChange={this.handleChange}
+                                />
+                                <Button
+                                    disabled={!editComment.content || isLoading}
+                                    className="mt-2"
+                                    variant="primary"
+                                    onClick={this.editComment}
+                                >
+                                    Save
+                                </Button>
+                            </OutsideClickHandler>
+                        ) : (
+                            content
+                        )}
+                    </Col>
+                </Row>
+            </Card.Body>
         );
     };
 
