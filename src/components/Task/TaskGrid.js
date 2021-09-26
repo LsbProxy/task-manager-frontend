@@ -126,6 +126,7 @@ class TaskGrid extends Component {
         const {
             sprint: { tasks },
         } = this.state;
+        const { handleError, addNotification } = this.props;
 
         return (
             <Col key={column} sm="2" className="border border-bottom-0 border-top-0">
@@ -140,7 +141,8 @@ class TaskGrid extends Component {
                         items={filter(tasks, (task) => task.status === column)}
                         itemProps={{
                             updateTaskInGrid: this.updateTaskInGrid,
-                            addNotification: this.props.addNotification,
+                            addNotification,
+                            handleError,
                         }}
                         ItemComponent={Task}
                         updateItem={this.updateTaskStatus}
