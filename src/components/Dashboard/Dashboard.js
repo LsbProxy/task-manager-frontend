@@ -18,6 +18,7 @@ class Dashboard extends Component {
                 createdDate: null,
                 updatedDate: null,
             },
+            user: JSON.parse(window.localStorage.getItem('user')),
             show: false,
             isLoading: false,
         };
@@ -61,10 +62,11 @@ class Dashboard extends Component {
     handleMembersChange = ({ target: { name, value } }) => {
         const {
             dashboard: { members },
+            user,
         } = this.state;
         let newValue = [...members];
 
-        if (members.indexOf(value) > -1) {
+        if (members.indexOf(value) > -1 && value !== user.username) {
             newValue = filter(members, (member) => member !== value);
         } else {
             newValue.push(value);

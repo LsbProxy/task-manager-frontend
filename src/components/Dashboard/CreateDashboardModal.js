@@ -16,6 +16,7 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
         users: [],
         isSubmit: false,
         errors: [],
+        user: JSON.parse(window.localStorage.getItem('user')),
     });
 
     const showLoader = (isLoading = false) => setState((newState) => ({ ...newState, isLoading }));
@@ -27,7 +28,7 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
 
             const users = map(userList, ({ username }) => username);
 
-            setState((newState) => ({ ...newState, users }));
+            setState((newState) => ({ ...newState, users, members: [newState.user.username] }));
         } catch (e) {
             hideModal();
             handleError(e);
@@ -62,10 +63,10 @@ const CreateDashboardModal = ({ hideModal, refreshGrid, handleError, addNotifica
     };
 
     const handleMembersChange = ({ target: { name, value } }) => {
-        const { members } = state;
+        const { members, user } = state;
         let newValue = [...members];
 
-        if (members.indexOf(value) > -1) {
+        if (members.indexOf(value) > -1 && value !== user.username) {
             newValue = filter(members, (member) => member !== value);
         } else {
             newValue.push(value);
