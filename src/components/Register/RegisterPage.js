@@ -76,9 +76,9 @@ const RegisterPage = () => {
         }
 
         if (!password2) {
-            errorList.push('Repeat password');
+            errorList.push({ message: 'Repeat password', standalone: true });
         } else if (password !== password2) {
-            errorList.push('Passwords must match.');
+            errorList.push({ message: 'Passwords must match.', standalone: true });
         }
 
         setState({ ...state, errors: errorList });

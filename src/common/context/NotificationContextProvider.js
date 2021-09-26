@@ -1,4 +1,4 @@
-import { first, isEmpty } from 'lodash';
+import { first, isEmpty, get } from 'lodash';
 import React, { useState, createContext } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 
@@ -19,7 +19,7 @@ const NotificationContextProvider = ({ children }) => {
                 error = err.error.join(`\n`);
             }
 
-            setState({ show: true, success: false, notification: error });
+            setState({ show: true, success: false, notification: get(error, 'message') });
         }
     };
 

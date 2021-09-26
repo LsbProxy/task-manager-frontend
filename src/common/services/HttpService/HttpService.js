@@ -1,4 +1,14 @@
-import { camelCase, each, isObject, isPlainObject, snakeCase } from 'lodash';
+import {
+    camelCase,
+    each,
+    isEmpty,
+    isObject,
+    isPlainObject,
+    snakeCase,
+    toLower,
+    replace,
+    capitalize,
+} from 'lodash';
 import { setTimeStamp } from '../../utils/idleCounter';
 
 const { REACT_APP_API_ENDPOINT } = process.env;
@@ -9,19 +19,23 @@ class HttpService {
     }
 
     fetch = (...params) =>
-        fetch(...params).then((response) => {
-            setTimeStamp();
+        fetch(...params)
+            .then((response) => {
+                setTimeStamp();
 
-            if (response.status >= 400) {
-                return response.json().then((err) => this.mapError(err));
-            }
+                if (response.status >= 400) {
+                    return response.json().then((json) => {
+                        throw json;
+                    });
+                }
 
-            if (response.status === 204) {
-                return {};
-            }
+                if (response.status === 204) {
+                    return {};
+                }
 
-            return response.json().then((json) => this.convertKeysToCamelCase(json));
-        });
+                return response.json().then((json) => this.convertKeysToCamelCase(json));
+            })
+            .catch((err) => this.mapError(err));
 
     mapError = (err) => {
         if (err.code === 'token_not_valid') {
@@ -30,15 +44,24 @@ class HttpService {
 
         const mappedError = { error: [] };
 
-        each(err, (value) => {
+        each(err, (value, key) => {
             if (isObject(value)) {
                 each(value, (val) => {
-                    mappedError.error.push(val);
+                    const loweredValue = toLower(val);
+                    const message =
+                        loweredValue.indexOf('this field') > -1
+                            ? capitalize(replace(loweredValue, 'this field', key))
+                            : val;
+                    mappedError.error.push({ message, isApiError: true });
                 });
             } else {
-                mappedError.error.push(value);
+                mappedError.error.push({ message: value, isApiError: true });
             }
         });
+
+        if (isEmpty(mappedError.error) && err.message) {
+            mappedError.error.push({ message: err.message, isApiError: true });
+        }
 
         throw mappedError;
     };
