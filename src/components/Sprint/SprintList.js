@@ -1,4 +1,4 @@
-import { filter, findIndex, get, isEmpty } from 'lodash';
+import { filter, findIndex, get, isEmpty, trim } from 'lodash';
 import React, { Component } from 'react';
 import { Button, Col, Row, ToastContainer } from 'react-bootstrap';
 import { useRouteMatch } from 'react-router-dom';
@@ -76,7 +76,13 @@ class SprintList extends Component {
             newState.dashboard.sprints = filter(dashboard.sprints, ({ id }) => id !== sprint.id);
         } else {
             const index = findIndex(dashboard.sprints, ({ id }) => id === sprint.id);
-            newState.dashboard.sprints[index] = sprint;
+            const updatedSprint = sprint;
+
+            if (!trim(updatedSprint.title)) {
+                updatedSprint.title = dashboard.sprints[index].title;
+            }
+
+            newState.dashboard.sprints[index] = updatedSprint;
         }
 
         this.setState(newState);

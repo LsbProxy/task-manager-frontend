@@ -1,4 +1,4 @@
-import { filter, findIndex, get, isEmpty } from 'lodash';
+import { filter, findIndex, get, isEmpty, trim } from 'lodash';
 import React, { Component } from 'react';
 import { Button, Col, Row, ToastContainer } from 'react-bootstrap';
 
@@ -48,7 +48,13 @@ class DashboardList extends Component {
             newState.dashboards = filter(dashboards, ({ id }) => id !== dashboard.id);
         } else {
             const index = findIndex(dashboards, ({ id }) => id === dashboard.id);
-            newState.dashboards[index] = dashboard;
+            const updatedDashboard = dashboard;
+
+            if (!trim(updatedDashboard.title)) {
+                updatedDashboard.title = dashboards[index].title;
+            }
+
+            newState.dashboards[index] = updatedDashboard;
         }
 
         this.setState(newState);

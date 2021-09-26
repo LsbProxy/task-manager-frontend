@@ -1,4 +1,4 @@
-import { filter, findIndex, isEmpty, map, startCase, get } from 'lodash';
+import { filter, findIndex, isEmpty, map, startCase, get, trim } from 'lodash';
 import React, { Component } from 'react';
 import { Col, Row, Button } from 'react-bootstrap';
 import { useRouteMatch } from 'react-router-dom';
@@ -116,7 +116,13 @@ class TaskGrid extends Component {
             newState.sprint.tasks = filter(sprint.tasks, ({ id }) => id !== task.id);
         } else {
             const taskIndex = findIndex(sprint.tasks, ({ id }) => id === task.id);
-            newState.sprint.tasks[taskIndex] = task;
+            const updatedTask = task;
+
+            if (!trim(updatedTask.title)) {
+                updatedTask.title = sprint.tasks[taskIndex].title;
+            }
+
+            newState.sprint.tasks[taskIndex] = updatedTask;
         }
 
         this.setState(newState);
