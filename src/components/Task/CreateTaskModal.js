@@ -45,7 +45,7 @@ const CreateTaskModal = ({
         try {
             showLoader(true);
             const { members } = await dashboardService.getDashboard(dashboardId);
-            setState((newState) => ({ ...newState, assignedtTo: members[0], members }));
+            setState((newState) => ({ ...newState, assignedTo: members[0], members }));
         } catch (e) {
             handleError(e);
         } finally {
