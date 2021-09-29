@@ -1,16 +1,25 @@
 import { each, isEmpty, some } from 'lodash';
 import React, { useState, useContext } from 'react';
-import { Button, Col, Form, Row } from 'react-bootstrap';
+import { Button, Col, Form, Row, Alert } from 'react-bootstrap';
 import { useHistory } from 'react-router-dom';
 
 import { LoaderContext } from '../../common/context/LoaderContextProvider';
 import authService from '../../common/services/AuthService/AuthService';
 import ErrorAlertList from '../Errors/ErrorAlertList';
 
+const { REACT_APP_TEST_EMAIL, REACT_APP_TEST_PASSWORD } = process.env;
+
 const LoginPage = () => {
-    const [state, setState] = useState({ email: '', password: '', errors: [] });
+    const [state, setState] = useState({
+        email: '',
+        password: '',
+        errors: [],
+        showDisclaimer: true,
+    });
     const { showLoader } = useContext(LoaderContext);
     const history = useHistory();
+
+    const hideDisclaimer = () => setState((newState) => ({ ...newState, showDisclaimer: false }));
 
     const handleError = (err) => {
         if (err && !isEmpty(err.error)) {
@@ -80,6 +89,18 @@ const LoginPage = () => {
         history.push('/register');
     };
 
+    const loginAsTestAdmin = async () => {
+        try {
+            showLoader(true);
+            const user = await authService.login(REACT_APP_TEST_EMAIL, REACT_APP_TEST_PASSWORD);
+            window.localStorage.setItem('user', JSON.stringify(user));
+            window.location.href = '';
+        } catch (err) {
+            showLoader(false);
+            handleError(err);
+        }
+    };
+
     return (
         <Row className="justify-content-center mt-5 pb-5">
             <Col lg="3" md="5">
@@ -88,6 +109,34 @@ const LoginPage = () => {
                     <h3 className="py-3">
                         <strong>Login</strong>
                     </h3>
+                    <Alert
+                        show={state.showDisclaimer}
+                        onClose={hideDisclaimer}
+                        variant="warning"
+                        dismissible
+                    >
+                        <p>
+                            Only Project Managers can:
+                            <br />
+                            &nbsp;&nbsp;&nbsp;&nbsp;- create Dashboards and Sprints
+                            <br />
+                            &nbsp;&nbsp;&nbsp;&nbsp;- add/update member access
+                            <br />
+                            <br />
+                            An email invitation is neded to register as a Project Manager.
+                        </p>
+                        <hr />
+                        <div className="d-flex justify-content-end">
+                            <Button
+                                onClick={loginAsTestAdmin}
+                                variant="outline-warning"
+                                className="text-dark"
+                                size="sm"
+                            >
+                                Login as test Project Manager
+                            </Button>
+                        </div>
+                    </Alert>
                     <Form.Group className="mb-3" controlId="formBasicEmail">
                         <Form.Label>Email address</Form.Label>
                         <Form.Control
