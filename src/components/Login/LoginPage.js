@@ -109,34 +109,36 @@ const LoginPage = () => {
                     <h3 className="py-3">
                         <strong>Login</strong>
                     </h3>
-                    <Alert
-                        show={state.showDisclaimer}
-                        onClose={hideDisclaimer}
-                        variant="warning"
-                        dismissible
-                    >
-                        <p>
-                            Only Project Managers can:
-                            <br />
-                            &nbsp;&nbsp;&nbsp;&nbsp;- create Dashboards and Sprints
-                            <br />
-                            &nbsp;&nbsp;&nbsp;&nbsp;- add/update member access
-                            <br />
-                            <br />
-                            An email invitation is neded to register as a Project Manager.
-                        </p>
-                        <hr />
-                        <div className="d-flex justify-content-end">
-                            <Button
-                                onClick={loginAsTestAdmin}
-                                variant="outline-warning"
-                                className="text-dark"
-                                size="sm"
-                            >
-                                Login as test Project Manager
-                            </Button>
-                        </div>
-                    </Alert>
+                    {REACT_APP_TEST_EMAIL && REACT_APP_TEST_PASSWORD && (
+                        <Alert
+                            show={state.showDisclaimer}
+                            onClose={hideDisclaimer}
+                            variant="warning"
+                            dismissible
+                        >
+                            <p>
+                                Only Project Managers can:
+                                <br />
+                                &nbsp;&nbsp;&nbsp;&nbsp;- create Dashboards and Sprints
+                                <br />
+                                &nbsp;&nbsp;&nbsp;&nbsp;- add/update member access
+                                <br />
+                                <br />
+                                An email invitation is neded to register as a Project Manager.
+                            </p>
+                            <hr />
+                            <div className="d-flex justify-content-end">
+                                <Button
+                                    onClick={loginAsTestAdmin}
+                                    variant="outline-warning"
+                                    className="text-dark"
+                                    size="sm"
+                                >
+                                    Login as test Project Manager
+                                </Button>
+                            </div>
+                        </Alert>
+                    )}
                     <Form.Group className="mb-3" controlId="formBasicEmail">
                         <Form.Label>Email address</Form.Label>
                         <Form.Control

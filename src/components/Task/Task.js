@@ -233,7 +233,7 @@ class Task extends Component {
 
         const { comments, ...rest } = task;
 
-        updateTaskInGrid({ ...rest });
+        updateTaskInGrid([{ ...rest }]);
 
         this.setState({ show: false, comment: '' });
     };

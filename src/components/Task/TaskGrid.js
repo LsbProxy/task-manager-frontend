@@ -108,7 +108,11 @@ class TaskGrid extends Component {
         }
     };
 
-    updateTaskInGrid = (task, removeTaskFromGrid) => {
+    updateTaskInGrid = ([task], removeTaskFromGrid) => {
+        if (!task) {
+            return;
+        }
+
         const { sprint } = this.state;
         const newState = { sprint: { ...sprint } };
 
