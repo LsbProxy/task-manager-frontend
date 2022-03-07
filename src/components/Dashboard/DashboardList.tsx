@@ -1,6 +1,7 @@
 import { Button, Col, Row, ToastContainer } from 'react-bootstrap';
 import { Error, NotificationContext } from '../../common/context/NotificationContextProvider';
 import React, { FC, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import authService, { User } from '../../common/services/AuthService';
 import dashboardService, { Dashboard as IDashboard } from '../../common/services/DashboardService';
 import { filter, findIndex, get, isEmpty, trim } from 'lodash';
 
@@ -17,14 +18,19 @@ const calculateHeight = () => {
 
 const DashboardList: FC = () => {
 	const [dashboards, setDashboards] = useState<IDashboard[]>([]);
-	const { handleError, addNotification } = useContext(NotificationContext);
+	const [memberList, setMemberList] = useState<string[]>([]);
+	const { handleError } = useContext(NotificationContext);
 	const { isLoading, showLoader } = useContext(LoaderContext);
 	const { setState: setModalState } = useContext(ModalContext);
 
-	const fetchDashboards = useCallback(async () => {
+	const fetchData = useCallback(async () => {
 		try {
 			showLoader(true);
-			const dashboards = await dashboardService.listDashboards();
+			const [dashboards, userList] = await Promise.all([
+				dashboardService.listDashboards(),
+				authService.getUsers(),
+			]);
+			setMemberList(userList.map(({ username }: User) => username));
 			setDashboards(dashboards);
 		} catch (e) {
 			handleError(e as Error);
@@ -34,7 +40,7 @@ const DashboardList: FC = () => {
 	}, []);
 
 	useEffect(() => {
-		fetchDashboards();
+		fetchData();
 	}, []);
 
 	const updateDashboardInGrid = useCallback(
@@ -63,15 +69,10 @@ const DashboardList: FC = () => {
 		setModalState({
 			show: true,
 			ModalContentComponent: (props) => (
-				<CreateDashboardModal
-					refreshGrid={fetchDashboards}
-					handleError={handleError}
-					addNotification={addNotification}
-					{...props}
-				/>
+				<CreateDashboardModal refreshGrid={fetchData} memberList={memberList} {...props} />
 			),
 		});
-	}, []);
+	}, [fetchData, memberList]);
 
 	const renderDashboards = () =>
 		useMemo(() => {
@@ -84,6 +85,7 @@ const DashboardList: FC = () => {
 					key={dashboard.id}
 					dashboard={dashboard}
 					updateDashboardInGrid={updateDashboardInGrid}
+					memberList={memberList}
 				/>
 			));
 		}, [dashboards, updateDashboardInGrid]);

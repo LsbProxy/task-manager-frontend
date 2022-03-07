@@ -1,56 +1,31 @@
 import { Button, Col, FloatingLabel, Form, Modal, Row } from 'react-bootstrap';
-import React, { ChangeEvent, FC, useCallback, useEffect, useState } from 'react';
-import authService, { User } from '../../common/services/AuthService';
+import { Error, NotificationContext } from '../../common/context/NotificationContextProvider';
+import React, { ChangeEvent, FC, useCallback, useContext, useState } from 'react';
 import dashboardService, { CreateDashboard } from '../../common/services/DashboardService';
 import { filter, isEmpty, map } from 'lodash';
 
-import { Error } from '../../common/context/NotificationContextProvider';
 import ErrorAlertList from '../ErrorAlertList';
 import Loader from '../Loader';
+import { User } from '../../common/services/AuthService';
 
 interface Props {
 	hideModal: () => void;
 	refreshGrid: () => void;
-	handleError: (error: Error) => void;
-	addNotification: (notification: string) => void;
+	memberList: string[];
 }
 
 const user: User = JSON.parse(window.localStorage.getItem('user') || '{}');
 
-const CreateDashboardModal: FC<Props> = ({
-	hideModal,
-	refreshGrid,
-	handleError,
-	addNotification,
-}) => {
+const CreateDashboardModal: FC<Props> = ({ hideModal, refreshGrid, memberList }) => {
 	const [dashboard, setDashboard] = useState<CreateDashboard>({
 		title: '',
 		description: '',
-		members: [],
+		members: [user.username],
 	});
-	const [users, setUsers] = useState<string[]>([]);
 	const [errors, setErrors] = useState<string[]>([]);
 	const [isSubmit, setIsSubmit] = useState(false);
 	const [isLoading, showLoader] = useState(false);
-
-	const fetchMembers = useCallback(async () => {
-		try {
-			showLoader(true);
-			const userList = await authService.getUsers();
-
-			setUsers(map(userList, ({ username }: User) => username));
-			setDashboard((currentDashboard) => ({ ...currentDashboard, members: [user.username] }));
-		} catch (e) {
-			hideModal();
-			handleError(e as Error);
-		} finally {
-			showLoader(false);
-		}
-	}, [user]);
-
-	useEffect(() => {
-		fetchMembers();
-	}, []);
+	const { addNotification, handleError } = useContext(NotificationContext);
 
 	const validateDashboard = useCallback(() => {
 		const { title, members } = dashboard;
@@ -155,7 +130,7 @@ const CreateDashboardModal: FC<Props> = ({
 									value={members}
 									onChange={({ target: { value } }) => handleMembersChange(value)}
 								>
-									{map(users, (member: string) => (
+									{map(memberList, (member: string) => (
 										<option key={member} value={member}>
 											{member}
 										</option>
@@ -167,7 +142,7 @@ const CreateDashboardModal: FC<Props> = ({
 				)}
 			</Modal.Body>
 		);
-	}, [dashboard, isLoading, errors, users]);
+	}, [dashboard, isLoading, errors, memberList]);
 
 	const renderModalFooter = useCallback(
 		() => (

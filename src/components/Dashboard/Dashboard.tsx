@@ -11,6 +11,7 @@ import { useHistory } from 'react-router-dom';
 interface Props {
 	dashboard: IDashboard;
 	updateDashboardInGrid: (dashboard: IDashboard, removeFromGrid?: boolean) => void;
+	memberList: string[];
 }
 
 const Dashboard: FC<Props> = (props) => {
@@ -74,7 +75,7 @@ const Dashboard: FC<Props> = (props) => {
 		<>
 			<EditDashboardModal
 				isOpen={isModalOpen}
-				memberList={props.dashboard.members}
+				memberList={props.memberList}
 				dashboardId={props.dashboard.id}
 				openCloseModal={setIsModalOpen}
 				updateDashboardInGrid={props.updateDashboardInGrid}
