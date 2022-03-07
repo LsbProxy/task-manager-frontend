@@ -2,8 +2,13 @@
 
 #### This Frontend is intended for use with https://github.com/LsbProxy/task_manager_api
 
-
 # Instructions:
+
+### Note:
+
+To create a "project manager" account you can run the following command in https://github.com/LsbProxy/task_manager_api
+
+python manage.py createsuperuser
 
 ## 1.a. - Requried variables for running the project [.env]
 
