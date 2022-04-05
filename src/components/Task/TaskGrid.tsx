@@ -1,48 +1,61 @@
-import { Button, Col, Row } from 'react-bootstrap';
-import { Error, NotificationContext } from '../../common/context/NotificationContextProvider';
-import React, { FC, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { filter, findIndex, isEmpty, map, startCase, trim } from 'lodash';
-import sprintService, { Sprint } from '../../common/services/SprintService';
+import { Error, useNotification } from '../../common/context/NotificationContextProvider';
+import React, { FC, useCallback, useEffect, useMemo } from 'react';
+import { filter, findIndex, isEmpty, map, startCase } from 'lodash';
+import { listTasks, updateTask } from '../../features/taskSlice';
 import taskService, { Task as ITask } from '../../common/services/TaskService';
 import taskStatus, { TaskStatus } from '../../common/utils/taskStatus';
+import { useDispatch, useSelector } from 'react-redux';
 
+import Button from '../Button';
+import Container from '../Container';
 import CreateTaskModal from './CreateTaskModal';
 import DraggableContainer from '../Draggable/DraggableContainer';
 import DraggableProvider from '../Draggable/DraggableProvider';
-import { LoaderContext } from '../../common/context/LoaderContextProvider';
-import { ModalContext } from '../../common/context/ModalContextProvider';
+import { RootState } from '../../app/store';
+import Row from '../Row';
+import Sidebar from '../Sidebar';
 import Task from './Task';
+import Text from '../Text';
 import redirectToHomePage from '../../common/utils/redirectToHomePage';
+import styled from 'styled-components';
+import { useLoader } from '../../common/context/LoaderContextProvider';
+import { useModal } from '../../common/context/ModalContextProvider';
 import { useRouteMatch } from 'react-router-dom';
 
+const ColumnHeader = styled.div`
+	border: 1px solid #dee2e6;
+	padding: 0.5rem;
+`;
+
+const ColumnContent = styled.div`
+	flex: 1;
+	border: 1px solid #dee2e6;
+	min-width: 250px;
+	min-height: 150px;
+`;
+
 const TaskGrid: FC = () => {
-	const [sprint, setSprint] = useState<Sprint>({
-		id: '',
-		title: '',
-		description: '',
-		createdDate: '',
-		updatedDate: '',
-		endDate: '',
-		dashboard: '',
-		tasks: [],
-	});
-	const { showLoader, isLoading } = useContext(LoaderContext);
-	const { handleError, addNotification } = useContext(NotificationContext);
-	const { setState: setModalState } = useContext(ModalContext);
+	const { sprint, loading } = useSelector((state: RootState) => state.tasks);
+	const { showLoader, isLoading } = useLoader();
+	const { handleError, addNotification } = useNotification();
+	const { setState: setModalState } = useModal();
 	const { params }: { params: { id: string } } = useRouteMatch();
+	const dispatch = useDispatch();
 
 	const fetchSprint = useCallback(async () => {
 		try {
-			redirectToHomePage(Number.isNaN(params.id));
-			showLoader(true);
-			const sprint = await sprintService.getSprint(params.id);
-			setSprint(sprint);
+			if (!parseInt(params.id)) {
+				return redirectToHomePage();
+			}
+			dispatch(listTasks(params.id));
 		} catch (e) {
 			handleError(e as Error);
-		} finally {
-			showLoader(false);
 		}
 	}, [params]);
+
+	useEffect(() => {
+		showLoader(loading);
+	}, [loading]);
 
 	useEffect(() => {
 		fetchSprint();
@@ -65,7 +78,6 @@ const TaskGrid: FC = () => {
 	const updateTaskStatus = useCallback(
 		async (newStatus, { item }) => {
 			try {
-				const newSprint = { ...sprint };
 				const updatedTask = { ...item, status: newStatus };
 				const taskIndex = findIndex(sprint.tasks, ({ id }: ITask) => id === updatedTask.id);
 
@@ -73,12 +85,9 @@ const TaskGrid: FC = () => {
 					return;
 				}
 
-				newSprint.tasks[taskIndex] = updatedTask;
-
 				showLoader(true);
 				await taskService.updateTask(updatedTask);
-
-				setSprint(newSprint);
+				await dispatch(updateTask({ task: updatedTask }));
 			} catch (e) {
 				handleError(e as Error);
 			} finally {
@@ -88,58 +97,29 @@ const TaskGrid: FC = () => {
 		[sprint],
 	);
 
-	const updateTaskInGrid = useCallback(
-		(task: ITask, removeTaskFromGrid?: boolean) => {
-			if (!task) {
-				return;
-			}
-
-			const newSprint = { ...sprint };
-
-			if (removeTaskFromGrid) {
-				newSprint.tasks = filter(sprint.tasks, ({ id }: ITask) => id !== task.id);
-			} else {
-				const taskIndex = findIndex(sprint.tasks, ({ id }: ITask) => id === task.id);
-				const updatedTask = task;
-
-				if (taskIndex === -1) {
-					return;
-				}
-
-				if (!trim(updatedTask.title)) {
-					updatedTask.title = sprint.tasks[taskIndex].title;
-				}
-
-				newSprint.tasks[taskIndex] = updatedTask;
-			}
-
-			setSprint(newSprint);
-		},
-		[sprint],
-	);
-
 	const renderDraggableColumnContainer = (column: string) => (
-		<Col key={column} sm="2" className="border border-bottom-0 border-top-0">
-			<Row id="draggableRowLabel">
-				<div className="border-bottom border-top">
+		<Container key={column}>
+			<ColumnHeader id="draggableRowLabel">
+				<Text>
 					<strong>{startCase(column)}</strong>
-				</div>
-			</Row>
-			<Row>
+				</Text>
+			</ColumnHeader>
+			<ColumnContent>
 				<DraggableContainer
 					id={column}
 					items={filter(sprint.tasks, (task: ITask) => task.status === column)}
 					itemProps={{
-						updateTaskInGrid,
 						addNotification,
 						handleError,
 					}}
 					ItemComponent={Task}
 					updateItem={updateTaskStatus}
-					handleChange={updateTaskInGrid}
+					handleChange={(task: ITask, removeFromGrid?: boolean) =>
+						dispatch(updateTask({ task, removeFromGrid }))
+					}
 				/>
-			</Row>
-		</Col>
+			</ColumnContent>
+		</Container>
 	);
 
 	const renderDraggableContainers = () => {
@@ -148,28 +128,28 @@ const TaskGrid: FC = () => {
 		}
 
 		return (
-			<DraggableProvider>
-				{map(taskStatus, ({ label }: TaskStatus) => renderDraggableColumnContainer(label))}
-			</DraggableProvider>
+			<Row align="flex-start" wrap="wrap" flex={1} height="100%">
+				<DraggableProvider>
+					{map(taskStatus, ({ label }: TaskStatus) => renderDraggableColumnContainer(label))}
+				</DraggableProvider>
+			</Row>
 		);
 	};
 
 	const renderSidebar = () =>
 		useMemo(
 			() => (
-				<Col sm="2" className="border border-bottom-0 border-top-0">
-					<Row className="p-3">
-						<Button size="lg" disabled={isLoading} onClick={openCreateTaskModal}>
-							Create Task
-						</Button>
-					</Row>
-				</Col>
+				<Sidebar>
+					<Button size="lg" disabled={isLoading} onClick={openCreateTaskModal}>
+						Create Task
+					</Button>
+				</Sidebar>
 			),
 			[openCreateTaskModal, isLoading],
 		);
 
 	return (
-		<Row>
+		<Row flex={1} height="100%" align="flex-start">
 			{renderSidebar()}
 			{renderDraggableContainers()}
 		</Row>

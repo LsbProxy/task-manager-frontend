@@ -1,21 +1,29 @@
-import React, { FC, useContext } from 'react';
+import React, { FC } from 'react';
 
-import { Container } from 'react-bootstrap';
 import Loader from '../Loader';
-import { LoaderContext } from '../../common/context/LoaderContextProvider';
 import Navigationbar from '../Navigationbar';
+import styled from 'styled-components';
+import { useLoader } from '../../common/context/LoaderContextProvider';
+
+const Wrapper = styled.div`
+	display: flex;
+	flex-direction: column;
+`;
+
+const Container = styled.div<{ visible: boolean }>`
+	display: ${(props) => (props.visible ? 'flex' : 'none')};
+	height: 100%;
+`;
 
 const MainLayout: FC = ({ children }) => {
-	const { isLoading } = useContext(LoaderContext);
+	const { isLoading } = useLoader();
 
 	return (
-		<div>
-			<Container fluid>
-				<Navigationbar />
-				{isLoading && <Loader />}
-				<div className={isLoading ? 'invisible' : ''}>{children}</div>
-			</Container>
-		</div>
+		<Wrapper>
+			<Navigationbar />
+			{isLoading && <Loader centered={true} />}
+			<Container visible={!isLoading}>{children}</Container>
+		</Wrapper>
 	);
 };
 

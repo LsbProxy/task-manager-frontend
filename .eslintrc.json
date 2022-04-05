@@ -22,6 +22,7 @@
 		"linebreak-style": ["warn", "unix"],
 		"quotes": ["warn", "single"],
 		"semi": ["warn", "always"],
-		"react/prop-types": 1
+		"react/prop-types": 1,
+		"no-mixed-spaces-and-tabs": 0
 	}
 }

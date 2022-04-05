@@ -1,22 +1,29 @@
-import { Button, Col, Container, Row, Toast } from 'react-bootstrap';
-import { Error, NotificationContext } from '../../common/context/NotificationContextProvider';
-import React, { FC, MouseEvent, useCallback, useContext, useMemo, useState } from 'react';
+import Button, { ButtonGroup } from '../Button';
+import { Error, useNotification } from '../../common/context/NotificationContextProvider';
+import React, { FC, MouseEvent, useCallback, useMemo } from 'react';
 import sprintService, { Sprint as ISprint } from '../../common/services/SprintService';
 
+import Container from '../Container';
 import EditSprintModal from './EditSprintModal';
-import { LoaderContext } from '../../common/context/LoaderContextProvider';
+import { ModalState } from '../../common/context/ModalContextProvider';
+import Row from '../Row';
+import Text from '../Text';
+import Toast from '../Toast';
+import { updateSprint } from '../../features/sprintSlice';
+import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
+import { useLoader } from '../../common/context/LoaderContextProvider';
 
 interface Props {
 	sprint: ISprint;
-	updateSprintInGrid: (sprint: ISprint, removeFromGrid?: boolean) => void;
+	setModalState: (state: ModalState) => void;
 }
 
-const Sprint: FC<Props> = ({ updateSprintInGrid, sprint }) => {
-	const [isModalOpen, setIsModalOpen] = useState(false);
-	const { showLoader } = useContext(LoaderContext);
-	const { handleError, addNotification } = useContext(NotificationContext);
+const Sprint: FC<Props> = ({ sprint, setModalState }) => {
+	const { showLoader } = useLoader();
+	const { handleError, addNotification } = useNotification();
 	const history = useHistory();
+	const dispatch = useDispatch();
 
 	const deleteSprint = useCallback(
 		async (e: MouseEvent<HTMLButtonElement>) => {
@@ -24,7 +31,7 @@ const Sprint: FC<Props> = ({ updateSprintInGrid, sprint }) => {
 				e.stopPropagation();
 				showLoader(true);
 				await sprintService.deleteSprint(sprint.id);
-				updateSprintInGrid(sprint, true);
+				dispatch(updateSprint({ sprint, removeFromGrid: true }));
 				addNotification(`Successfully deleted ${sprint.title}`);
 			} catch (err) {
 				handleError(err as Error);
@@ -37,14 +44,17 @@ const Sprint: FC<Props> = ({ updateSprintInGrid, sprint }) => {
 
 	const openEditSprintModal = async (e: MouseEvent<HTMLButtonElement>) => {
 		e.stopPropagation();
-		setIsModalOpen(true);
+		setModalState({
+			show: true,
+			ModalContentComponent: (props) => <EditSprintModal {...props} sprintId={sprint.id} />,
+		});
 	};
 
 	const renderEditButton = () =>
 		useMemo(
 			() => (
-				<Button className="m-1" onClick={openEditSprintModal} size="sm" variant="warning">
-					<strong>Edit</strong>
+				<Button onClick={openEditSprintModal} size="sm" variant="secondary">
+					Edit
 				</Button>
 			),
 			[openEditSprintModal],
@@ -53,49 +63,46 @@ const Sprint: FC<Props> = ({ updateSprintInGrid, sprint }) => {
 	const renderDeleteButton = () =>
 		useMemo(
 			() => (
-				<Button className="m-1" variant="danger" size="sm" onClick={deleteSprint}>
-					<strong>Delete Sprint</strong>
+				<Button variant="warning" size="sm" onClick={deleteSprint}>
+					Delete Sprint
 				</Button>
 			),
 			[deleteSprint],
 		);
 
 	return (
-		<>
-			<EditSprintModal
-				isOpen={isModalOpen}
-				sprintId={sprint.id}
-				openCloseModal={setIsModalOpen}
-				updateSprintInGrid={updateSprintInGrid}
-			/>
-			<Toast
-				key={sprint.id}
-				style={{ height: '230px' }}
-				className="d-inline-block m-1"
-				onClick={() => history.push(`/sprint/${sprint.id}`)}
-			>
-				<Toast.Header closeButton={false}>
-					<strong className="me-auto">{sprint.title}</strong>
-					<small>Created: {new Date(sprint.createdDate).toLocaleString()}</small>
-				</Toast.Header>
-				<Toast.Body>
-					<Container>
-						<Row>
-							<Col>
-								{renderEditButton()}
-								{renderDeleteButton()}
-							</Col>
-						</Row>
-						<Row className="pt-4">
-							<Col>
-								<Row>Description:</Row>
-								<Col className="text-truncate">{sprint.description}</Col>
-							</Col>
-						</Row>
-					</Container>
-				</Toast.Body>
-			</Toast>
-		</>
+		<Toast
+			width="350px"
+			height="230px"
+			margin={{ top: 1, left: 1 }}
+			key={sprint.id}
+			onClick={() => history.push(`/sprint/${sprint.id}`)}
+			Header={() => (
+				<Row align="space-between" width="100%">
+					{' '}
+					<Text>
+						<strong>{sprint.title}</strong>
+					</Text>
+					<Text>
+						<small>Created: {new Date(sprint.createdDate).toLocaleString()}</small>
+					</Text>
+				</Row>
+			)}
+			Body={() => (
+				<Container align="flex-start">
+					<ButtonGroup>
+						{renderEditButton()}
+						{renderDeleteButton()}
+					</ButtonGroup>
+					{sprint.description && (
+						<Container align="flex-start" margin={{ top: 0.5 }}>
+							Description:
+							<Text>{sprint.description}</Text>
+						</Container>
+					)}
+				</Container>
+			)}
+		/>
 	);
 };
 

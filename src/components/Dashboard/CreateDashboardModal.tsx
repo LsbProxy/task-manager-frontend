@@ -1,31 +1,47 @@
-import { Button, Col, FloatingLabel, Form, Modal, Row } from 'react-bootstrap';
-import { Error, NotificationContext } from '../../common/context/NotificationContextProvider';
-import React, { ChangeEvent, FC, useCallback, useContext, useState } from 'react';
+import { Error, useNotification } from '../../common/context/NotificationContextProvider';
+import React, { ChangeEvent, FC, useCallback, useState } from 'react';
 import dashboardService, { CreateDashboard } from '../../common/services/DashboardService';
 import { filter, isEmpty, map } from 'lodash';
 
+import Button from '../Button';
+import Container from '../Container';
+import Description from '../Description';
 import ErrorAlertList from '../ErrorAlertList';
+import Input from '../Input';
 import Loader from '../Loader';
+import { RootState } from '../../app/store';
+import Row from '../Row';
+import Select from '../Select';
+import Text from '../Text';
 import { User } from '../../common/services/AuthService';
+import styled from 'styled-components';
+import { useSelector } from 'react-redux';
+
+const SelectContainer = styled.div`
+	width: 30%;
+	@media (max-width: 768px) {
+		width: 100%;
+	}
+`;
 
 interface Props {
 	hideModal: () => void;
 	refreshGrid: () => void;
-	memberList: string[];
 }
 
 const user: User = JSON.parse(window.localStorage.getItem('user') || '{}');
 
-const CreateDashboardModal: FC<Props> = ({ hideModal, refreshGrid, memberList }) => {
+const CreateDashboardModal: FC<Props> = ({ hideModal, refreshGrid }) => {
 	const [dashboard, setDashboard] = useState<CreateDashboard>({
 		title: '',
 		description: '',
 		members: [user.username],
 	});
+	const { users } = useSelector((state: RootState) => state.users);
 	const [errors, setErrors] = useState<string[]>([]);
 	const [isSubmit, setIsSubmit] = useState(false);
 	const [isLoading, showLoader] = useState(false);
-	const { addNotification, handleError } = useContext(NotificationContext);
+	const { addNotification, handleError } = useNotification();
 
 	const validateDashboard = useCallback(() => {
 		const { title, members } = dashboard;
@@ -49,6 +65,9 @@ const CreateDashboardModal: FC<Props> = ({ hideModal, refreshGrid, memberList })
 	}, [dashboard, isSubmit]);
 
 	const handleChange = ({ target: { name, value } }: ChangeEvent<HTMLInputElement>) =>
+		setDashboard((currentDashboard) => ({ ...currentDashboard, [name]: value }));
+
+	const handleDescriptionChange = ({ target: { name, value } }: ChangeEvent<HTMLTextAreaElement>) =>
 		setDashboard((currentDashboard) => ({ ...currentDashboard, [name]: value }));
 
 	const handleMembersChange = useCallback(
@@ -97,77 +116,63 @@ const CreateDashboardModal: FC<Props> = ({ hideModal, refreshGrid, memberList })
 		const { title, description, members } = dashboard;
 
 		return (
-			<Modal.Body style={{ minHeight: '300px' }}>
+			<Container style={{ minHeight: '300px' }}>
 				{isLoading ? (
 					<Loader />
 				) : (
-					<Form>
+					<form>
 						<ErrorAlertList errors={errors} />
-						<Form.Control
+						<Input
 							type="text"
 							placeholder="Title"
 							name="title"
 							value={title}
 							onChange={handleChange}
 						/>
-						<FloatingLabel className="pt-1" controlId="floatingTextarea2" label="Description">
-							<Form.Control
-								as="textarea"
-								style={{ height: '300px' }}
-								placeholder="Description"
-								name="description"
-								value={description}
-								onChange={handleChange}
+						<Description
+							placeholder="Description"
+							name="description"
+							value={description}
+							onChange={handleDescriptionChange}
+						/>
+						<SelectContainer>
+							<Select
+								multiple
+								name="members"
+								value={members}
+								label="Members:"
+								onChange={({ target: { value } }) => handleMembersChange(value)}
+								options={map(users, ({ username: value }: User) => ({ value, label: value }))}
 							/>
-						</FloatingLabel>
-						<Row className="pt-1">
-							<Col sm="3">
-								<Form.Label>Members:</Form.Label>
-								<Form.Control
-									multiple
-									as="select"
-									name="members"
-									value={members}
-									onChange={({ target: { value } }) => handleMembersChange(value)}
-								>
-									{map(memberList, (member: string) => (
-										<option key={member} value={member}>
-											{member}
-										</option>
-									))}
-								</Form.Control>
-							</Col>
-						</Row>
-					</Form>
+						</SelectContainer>
+					</form>
 				)}
-			</Modal.Body>
+			</Container>
 		);
-	}, [dashboard, isLoading, errors, memberList]);
+	}, [dashboard, isLoading, errors, users]);
 
 	const renderModalFooter = useCallback(
 		() => (
-			<Modal.Footer>
+			<Row align="flex-end">
 				<Button
-					className="mt-2"
-					variant="primary"
 					disabled={isSubmit && (!dashboard.title || isEmpty(dashboard.members))}
 					onClick={handleCreateDashboard}
 				>
 					Create
 				</Button>
-			</Modal.Footer>
+			</Row>
 		),
 		[dashboard.title, dashboard.members, isSubmit],
 	);
 
 	return (
-		<>
-			<Modal.Header closeButton>
+		<Container>
+			<Text>
 				<strong>Create Dashboard</strong>
-			</Modal.Header>
+			</Text>
 			{renderModalBody()}
 			{renderModalFooter()}
-		</>
+		</Container>
 	);
 };
 

@@ -1,6 +1,9 @@
-import { Alert, Modal } from 'react-bootstrap';
-import React, { FC, createContext, useState } from 'react';
+import React, { FC, createContext, useContext, useState } from 'react';
 import { first, get, isEmpty } from 'lodash';
+
+import Alert from '../../components/Alert';
+import Container from '../../components/Container';
+import Modal from '../../components/Modal';
 
 export interface Error {
 	error: string[];
@@ -11,6 +14,7 @@ interface NotificationStore {
 	closeNotification: () => void;
 	addNotification: (notification: string) => void;
 	handleError: (err: Error) => void;
+	state: State;
 }
 
 interface State {
@@ -19,11 +23,14 @@ interface State {
 	notification?: string;
 }
 
-export const NotificationContext = createContext<NotificationStore>({
+const NotificationContext = createContext<NotificationStore>({
 	closeNotification: () => void 0,
 	addNotification: (notification: string) => void notification,
 	handleError: (err: Error) => void err,
+	state: { show: false, success: false },
 });
+
+export const useNotification = (): NotificationStore => useContext(NotificationContext);
 
 const NotificationContextProvider: FC = ({ children }) => {
 	const [state, setState] = useState<State>({ show: false, success: false });
@@ -46,18 +53,26 @@ const NotificationContextProvider: FC = ({ children }) => {
 	};
 
 	return (
-		<NotificationContext.Provider value={{ closeNotification, addNotification, handleError }}>
+		<NotificationContext.Provider
+			value={{ closeNotification, addNotification, handleError, state }}
+		>
 			{state.notification && (
-				<Modal show={state.show} onHide={closeNotification} keyboard={false} centered>
-					<Modal.Body>
-						<Alert variant={state.success ? 'success' : 'danger'} className="text-wrap m-auto">
-							{state.notification}
-						</Alert>
-					</Modal.Body>
+				<Modal
+					show={state.show}
+					onHide={closeNotification}
+					centered={true}
+					size="sm"
+					zIndex={3}
+					isNotification={true}
+				>
+					<Container>
+						<Alert variant={state.success ? 'success' : 'danger'}>{state.notification}</Alert>
+					</Container>
 				</Modal>
 			)}
 			{children}
 		</NotificationContext.Provider>
 	);
 };
+
 export default NotificationContextProvider;

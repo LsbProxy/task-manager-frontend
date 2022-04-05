@@ -1,78 +1,52 @@
-import { Button, Col, Row, ToastContainer } from 'react-bootstrap';
-import { Error, NotificationContext } from '../../common/context/NotificationContextProvider';
-import React, { FC, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import authService, { User } from '../../common/services/AuthService';
-import dashboardService, { Dashboard as IDashboard } from '../../common/services/DashboardService';
-import { filter, findIndex, get, isEmpty, trim } from 'lodash';
+import { Error, useNotification } from '../../common/context/NotificationContextProvider';
+import React, { FC, useCallback, useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
+import Button from '../Button';
 import CreateDashboardModal from './CreateDashboardModal';
 import Dashboard from './Dashboard';
-import { LoaderContext } from '../../common/context/LoaderContextProvider';
-import { ModalContext } from '../../common/context/ModalContextProvider';
-
-const calculateHeight = () => {
-	const navHeight = get(document.querySelector('nav'), 'clientHeight', 0);
-
-	return window.innerHeight - navHeight;
-};
+import { RootState } from '../../app/store';
+import Row from '../Row';
+import Sidebar from '../Sidebar';
+import { getUsers } from '../../features/userSlice';
+import { isEmpty } from 'lodash';
+import { listDashboards } from '../../features/dashboardSlice';
+import { useLoader } from '../../common/context/LoaderContextProvider';
+import { useModal } from '../../common/context/ModalContextProvider';
 
 const DashboardList: FC = () => {
-	const [dashboards, setDashboards] = useState<IDashboard[]>([]);
-	const [memberList, setMemberList] = useState<string[]>([]);
-	const { handleError } = useContext(NotificationContext);
-	const { isLoading, showLoader } = useContext(LoaderContext);
-	const { setState: setModalState } = useContext(ModalContext);
+	const { dashboards, loading: dashboardsLoading } = useSelector(
+		(state: RootState) => state.dashboards,
+	);
+	const { loading: usersLoading } = useSelector((state: RootState) => state.users);
+	const { handleError } = useNotification();
+	const { isLoading, showLoader } = useLoader();
+	const { setState: setModalState } = useModal();
+	const dispatch = useDispatch();
 
 	const fetchData = useCallback(async () => {
 		try {
-			showLoader(true);
-			const [dashboards, userList] = await Promise.all([
-				dashboardService.listDashboards(),
-				authService.getUsers(),
-			]);
-			setMemberList(userList.map(({ username }: User) => username));
-			setDashboards(dashboards);
+			dispatch(getUsers());
+			dispatch(listDashboards());
 		} catch (e) {
 			handleError(e as Error);
-		} finally {
-			showLoader(false);
 		}
 	}, []);
+
+	useEffect(() => {
+		showLoader(usersLoading || dashboardsLoading);
+	}, [usersLoading, dashboardsLoading]);
 
 	useEffect(() => {
 		fetchData();
 	}, []);
 
-	const updateDashboardInGrid = useCallback(
-		(dashboard: IDashboard, removeFromGrid?: boolean) => {
-			let newDashboards = [...dashboards];
-
-			if (removeFromGrid) {
-				newDashboards = filter(dashboards, ({ id }: IDashboard) => id !== dashboard.id);
-			} else {
-				const index = findIndex(dashboards, ({ id }: IDashboard) => id === dashboard.id);
-				const updatedDashboard = dashboard;
-
-				if (!trim(updatedDashboard.title)) {
-					updatedDashboard.title = dashboards[index].title;
-				}
-
-				newDashboards[index] = updatedDashboard;
-			}
-
-			setDashboards(newDashboards);
-		},
-		[dashboards],
-	);
-
 	const openCreateDashboardModal = useCallback(() => {
 		setModalState({
 			show: true,
-			ModalContentComponent: (props) => (
-				<CreateDashboardModal refreshGrid={fetchData} memberList={memberList} {...props} />
-			),
+			ModalContentComponent: (props) => <CreateDashboardModal refreshGrid={fetchData} {...props} />,
 		});
-	}, [fetchData, memberList]);
+	}, [fetchData]);
 
 	const renderDashboards = () =>
 		useMemo(() => {
@@ -81,35 +55,28 @@ const DashboardList: FC = () => {
 			}
 
 			return dashboards.map((dashboard) => (
-				<Dashboard
-					key={dashboard.id}
-					dashboard={dashboard}
-					updateDashboardInGrid={updateDashboardInGrid}
-					memberList={memberList}
-				/>
+				<Dashboard setModalState={setModalState} key={dashboard.id} dashboard={dashboard} />
 			));
-		}, [dashboards, updateDashboardInGrid]);
+		}, [dashboards]);
 
 	const renderSidebar = () =>
 		useMemo(
 			() => (
-				<Col sm="2" className="border border-bottom-0 border-top-0">
-					<Row className="p-3">
-						<Button size="lg" disabled={isLoading} onClick={openCreateDashboardModal}>
-							Create Dashboard
-						</Button>
-					</Row>
-				</Col>
+				<Sidebar>
+					<Button size="lg" disabled={isLoading} onClick={openCreateDashboardModal}>
+						Create Dashboard
+					</Button>
+				</Sidebar>
 			),
 			[isLoading],
 		);
 
 	return (
-		<Row style={{ height: calculateHeight() }}>
+		<Row>
 			{renderSidebar()}
-			<Col sm="10" className="pb-5">
-				<ToastContainer>{renderDashboards()}</ToastContainer>
-			</Col>
+			<Row align="flex-start" wrap="wrap" margin={{ bottom: 1 }}>
+				{renderDashboards()}
+			</Row>
 		</Row>
 	);
 };

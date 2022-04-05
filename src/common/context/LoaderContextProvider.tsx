@@ -1,14 +1,16 @@
-import React, { useState, createContext, FC } from 'react';
+import React, { FC, createContext, useContext, useState } from 'react';
 
 interface LoaderStore {
 	isLoading: boolean;
 	showLoader: (value: boolean) => void;
 }
 
-export const LoaderContext = createContext<LoaderStore>({
+const LoaderContext = createContext<LoaderStore>({
 	isLoading: false,
 	showLoader: (value: boolean) => void value,
 });
+
+export const useLoader = (): LoaderStore => useContext(LoaderContext);
 
 const LoaderContextProvider: FC = (props) => {
 	const [isLoading, showLoader] = useState(false);

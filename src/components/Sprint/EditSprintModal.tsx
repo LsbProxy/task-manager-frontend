@@ -1,18 +1,22 @@
-import { Button, Col, Container, FloatingLabel, Form, Modal, Row } from 'react-bootstrap';
-import { Error, NotificationContext } from '../../common/context/NotificationContextProvider';
-import React, { ChangeEvent, FC, useCallback, useContext, useEffect, useState } from 'react';
+import Button, { ButtonGroup } from '../Button';
+import { Error, useNotification } from '../../common/context/NotificationContextProvider';
+import React, { ChangeEvent, FC, useCallback, useEffect, useState } from 'react';
 import sprintService, { Sprint } from '../../common/services/SprintService';
 
+import Container from '../Container';
+import Description from '../Description';
+import Input from '../Input';
 import Loader from '../Loader';
+import Row from '../Row';
+import { updateSprint } from '../../features/sprintSlice';
+import { useDispatch } from 'react-redux';
 
 interface Props {
-	isOpen: boolean;
-	openCloseModal: (value: boolean) => void;
 	sprintId: string;
-	updateSprintInGrid: (sprint: Sprint, removeFromGrid?: boolean) => void;
+	hideModal: () => void;
 }
 
-const EditSprintModal: FC<Props> = ({ isOpen, openCloseModal, sprintId, updateSprintInGrid }) => {
+const EditSprintModal: FC<Props> = ({ sprintId, hideModal }) => {
 	const [sprint, setSprint] = useState<Sprint>({
 		id: '',
 		title: '',
@@ -24,12 +28,10 @@ const EditSprintModal: FC<Props> = ({ isOpen, openCloseModal, sprintId, updateSp
 		tasks: [],
 	});
 	const [isLoading, showLoader] = useState(false);
-	const { addNotification, handleError } = useContext(NotificationContext);
+	const { addNotification, handleError } = useNotification();
+	const dispatch = useDispatch();
 
 	const fetchData = useCallback(async () => {
-		if (!isOpen) {
-			return;
-		}
 		try {
 			showLoader(true);
 			const sprint = await sprintService.getSprint(sprintId);
@@ -39,13 +41,16 @@ const EditSprintModal: FC<Props> = ({ isOpen, openCloseModal, sprintId, updateSp
 		} finally {
 			showLoader(false);
 		}
-	}, [sprintId, isOpen]);
+	}, [sprintId]);
 
 	useEffect(() => {
 		fetchData();
-	}, [fetchData]);
+	}, []);
 
 	const handleChange = ({ target: { name, value } }: ChangeEvent<HTMLInputElement>) =>
+		setSprint((currentSprint) => ({ ...currentSprint, [name]: value }));
+
+	const handleDescriptionChange = ({ target: { name, value } }: ChangeEvent<HTMLTextAreaElement>) =>
 		setSprint((currentSprint) => ({ ...currentSprint, [name]: value }));
 
 	const handleSubmit = useCallback(async () => {
@@ -54,8 +59,8 @@ const EditSprintModal: FC<Props> = ({ isOpen, openCloseModal, sprintId, updateSp
 			const updatedSprint = await sprintService.updateSprint(sprint);
 
 			setSprint(updatedSprint);
-			updateSprintInGrid(sprint);
-			openCloseModal(false);
+			dispatch(updateSprint({ sprint }));
+			hideModal();
 			addNotification(`Successfully updated ${updatedSprint.title}`);
 		} catch (e) {
 			handleError(e as Error);
@@ -65,56 +70,49 @@ const EditSprintModal: FC<Props> = ({ isOpen, openCloseModal, sprintId, updateSp
 	}, [sprint]);
 
 	return (
-		<Modal show={isOpen} onHide={() => openCloseModal(false)} keyboard={false} size="xl">
+		<Container style={{ minHeight: '400px' }}>
 			{isLoading ? (
-				<Modal.Body style={{ minHeight: '400px' }}>
-					<Loader />
-				</Modal.Body>
+				<Loader />
 			) : (
 				<>
-					<Modal.Header closeButton>
-						<Container style={{ paddingLeft: 0 }}>
+					<Container>
+						<Container>
 							<Row>
-								<Col>
-									<Form.Control
-										size="lg"
+								<Container>
+									<Input
 										type="text"
 										placeholder="Title"
 										name="title"
 										value={sprint.title}
 										onChange={handleChange}
 									/>
-								</Col>
+								</Container>
 							</Row>
 						</Container>
-					</Modal.Header>
-					<Modal.Body>
+					</Container>
+					<Container>
 						<Row>
-							<Col>
-								<FloatingLabel controlId="floatingTextarea2" label="Description">
-									<Form.Control
-										as="textarea"
-										style={{ height: '200px' }}
-										placeholder="Description"
-										name="description"
-										value={sprint.description}
-										onChange={handleChange}
-									/>
-								</FloatingLabel>
-							</Col>
+							<Container>
+								<Description
+									placeholder="Description"
+									name="description"
+									value={sprint.description}
+									onChange={handleDescriptionChange}
+								/>
+							</Container>
 						</Row>
-					</Modal.Body>
-					<Modal.Footer>
-						<Button variant="outline-secondary" onClick={() => openCloseModal(false)}>
-							<strong>Cancel</strong>
-						</Button>
-						<Button onClick={handleSubmit}>
-							<strong>Save</strong>
-						</Button>
-					</Modal.Footer>
+					</Container>
+					<Row align="flex-end">
+						<ButtonGroup gap="0.5rem">
+							<Button variant="outline-primary" onClick={hideModal}>
+								Cancel
+							</Button>
+							<Button onClick={handleSubmit}>Save</Button>
+						</ButtonGroup>
+					</Row>
 				</>
 			)}
-		</Modal>
+		</Container>
 	);
 };
 

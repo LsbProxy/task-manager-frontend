@@ -1,10 +1,10 @@
-import React, { FC, createContext, useState } from 'react';
+import React, { FC, createContext, useContext, useState } from 'react';
 
-import { Modal } from 'react-bootstrap';
+import Modal from '../../components/Modal';
 
 export type ModalState = {
 	show: boolean;
-	ModalContentComponent?: FC<{
+	ModalContentComponent: FC<{
 		hideModal: () => void;
 		setModalState: (state: ModalState) => void;
 	}>;
@@ -15,10 +15,12 @@ interface ModalStore {
 	setState: (state: ModalState) => void;
 }
 
-export const ModalContext = createContext<ModalStore>({
-	state: { show: false },
+const ModalContext = createContext<ModalStore>({
+	state: { ModalContentComponent: () => null, show: false },
 	setState: () => void 0,
 });
+
+export const useModal = (): ModalStore => useContext(ModalContext);
 
 const ModalContextProvider: FC = ({ children }) => {
 	const [state, setState] = useState<ModalState>({
@@ -26,17 +28,16 @@ const ModalContextProvider: FC = ({ children }) => {
 		ModalContentComponent: () => null,
 	});
 
-	const hideModal = () => setState((newState) => ({ ...newState, show: false }));
+	const hideModal = () => setState({ ModalContentComponent: () => null, show: false });
 
 	return (
 		<ModalContext.Provider value={{ state, setState }}>
-			{state.ModalContentComponent && (
-				<Modal show={state.show} onHide={hideModal} keyboard={false} size="xl">
-					<state.ModalContentComponent hideModal={hideModal} setModalState={setState} />
-				</Modal>
-			)}
+			<Modal show={state.show} onHide={hideModal}>
+				<state.ModalContentComponent hideModal={hideModal} setModalState={setState} />
+			</Modal>
 			{children}
 		</ModalContext.Provider>
 	);
 };
+
 export default ModalContextProvider;

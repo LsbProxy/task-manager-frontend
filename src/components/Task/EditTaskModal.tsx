@@ -1,33 +1,53 @@
-import {
-	Button,
-	Card,
-	Col,
-	Container,
-	Dropdown,
-	DropdownButton,
-	FloatingLabel,
-	Form,
-	Modal,
-	Row,
-} from 'react-bootstrap';
-import { Error, NotificationContext } from '../../common/context/NotificationContextProvider';
-import React, { ChangeEvent, FC, useCallback, useContext, useEffect, useState } from 'react';
+import { Error, useNotification } from '../../common/context/NotificationContextProvider';
+import React, { ChangeEvent, FC, useCallback, useEffect, useState } from 'react';
 import taskService, { Task } from '../../common/services/TaskService';
 import taskStatus, { TaskStatus, TaskStatusLabel } from '../../common/utils/taskStatus';
 
+import Button from '../Button';
 import CommentSection from './Comments/CommentSection';
+import Container from '../Container';
+import Description from '../Description';
+import Input from '../Input';
 import Loader from '../Loader';
 import OutsideClickHandler from 'react-outside-click-handler';
+import Row from '../Row';
+import Select from '../Select';
+import Text from '../Text';
 import { map } from 'lodash';
+import styled from 'styled-components';
+import { updateTask } from '../../features/taskSlice';
+import { useDispatch } from 'react-redux';
+
+const ContentWrapper = styled(Row)`
+	@media (max-width: 768px) {
+		flex-direction: column-reverse;
+	}
+`;
+
+const LeftPanel = styled(Container)`
+	flex: 3;
+`;
+
+const RightPanel = styled(Container)`
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	border: 1px solid #d6d6d6;
+	padding: 1rem;
+	margin-left: 1rem;
+	@media (max-width: 768px) {
+		margin-left: 0;
+		margin-bottom: 1rem;
+	}
+`;
 
 interface ModalProps {
-	isOpen: boolean;
 	id: string;
-	openCloseModal: (isOpen: boolean) => void;
-	updateTaskInGrid: (task: Task, removeTaskFromGrid?: boolean) => void;
+	hideModal: () => void;
 }
 
-const EditTaskModal: FC<ModalProps> = ({ isOpen, id, openCloseModal, updateTaskInGrid }) => {
+const EditTaskModal: FC<ModalProps> = ({ id, hideModal }) => {
 	const [task, setTask] = useState<Task>({
 		id: '',
 		title: '',
@@ -42,15 +62,19 @@ const EditTaskModal: FC<ModalProps> = ({ isOpen, id, openCloseModal, updateTaskI
 		dashboard: '',
 	});
 	const [isLoading, showLoader] = useState(false);
-	const [wasSubmitted, setWasSubmitted] = useState(false);
+	const [submitCount, setSubmitCount] = useState(0);
 	const [focusTitle, setFocusTitle] = useState(false);
 	const [focusDescription, setFocusDescription] = useState(false);
-	const { addNotification, handleError } = useContext(NotificationContext);
+	const { addNotification, handleError } = useNotification();
+	const dispatch = useDispatch();
+
+	useEffect(() => {
+		if (submitCount) {
+			dispatch(updateTask({ task }));
+		}
+	}, [submitCount]);
 
 	const fetchData = useCallback(async () => {
-		if (!isOpen) {
-			return;
-		}
 		try {
 			showLoader(true);
 			const task = await taskService.getTask(id);
@@ -60,24 +84,27 @@ const EditTaskModal: FC<ModalProps> = ({ isOpen, id, openCloseModal, updateTaskI
 		} finally {
 			showLoader(false);
 		}
-	}, [id, isOpen]);
+	}, [id]);
 
 	useEffect(() => {
 		fetchData();
-	}, [isOpen]);
+	}, []);
 
 	const handleChange = ({ target: { name, value } }: ChangeEvent<HTMLInputElement>) =>
 		setTask((currentTask) => ({ ...currentTask, [name]: value }));
 
+	const handleDescriptionChange = ({ target: { name, value } }: ChangeEvent<HTMLTextAreaElement>) =>
+		setTask((currentTask) => ({ ...currentTask, [name]: value }));
+
 	const updateStatus = useCallback(
-		(status: TaskStatusLabel) => async () => {
+		async (status: TaskStatusLabel) => {
 			try {
 				showLoader(true);
 
 				const updatedTask = await taskService.updateTask({ ...task, status });
 
 				setTask(updatedTask);
-				setWasSubmitted(true);
+				setSubmitCount(submitCount + 1);
 				addNotification(`Successfully updated ${updatedTask.title}`);
 			} catch (e) {
 				handleError(e as Error);
@@ -85,15 +112,16 @@ const EditTaskModal: FC<ModalProps> = ({ isOpen, id, openCloseModal, updateTaskI
 				showLoader(false);
 			}
 		},
-		[task],
+		[task, submitCount],
 	);
 
 	const deleteTask = useCallback(async () => {
 		try {
 			showLoader(true);
 			await taskService.deleteTask(task.id);
-			updateTaskInGrid(task, true);
+			dispatch(updateTask({ task, removeFromGrid: true }));
 			addNotification(`Successfully deleted ${task.title}`);
+			hideModal();
 		} catch (e) {
 			handleError(e as Error);
 		} finally {
@@ -109,91 +137,63 @@ const EditTaskModal: FC<ModalProps> = ({ isOpen, id, openCloseModal, updateTaskI
 			setTask(updatedTask);
 			setFocusTitle(false);
 			setFocusDescription(false);
-			setWasSubmitted(true);
+			setSubmitCount(submitCount + 1);
 			addNotification(`Successfully updated ${updatedTask.title}`);
 		} catch (e) {
 			handleError(e as Error);
 		} finally {
 			showLoader(false);
 		}
-	}, [task]);
-
-	const hideModal = () => {
-		if (wasSubmitted) {
-			updateTaskInGrid(task);
-		}
-		openCloseModal(false);
-	};
+	}, [task, submitCount]);
 
 	const renderModalHeader = () => (
-		<Container style={{ paddingLeft: 0 }}>
-			<Row>
-				<Col>
-					<OutsideClickHandler onOutsideClick={() => setFocusTitle(false)}>
-						<Form onSubmit={handleSubmit}>
-							<Form.Control
-								size="lg"
-								type="text"
-								placeholder="Title"
-								name="title"
-								value={task.title}
-								onChange={handleChange}
-								onFocus={() => setFocusTitle(true)}
-							/>
-							{focusTitle && (
-								<Button
-									disabled={isLoading || !focusTitle}
-									className="mt-2"
-									variant="primary"
-									type="submit"
-								>
-									Save
-								</Button>
-							)}
-						</Form>
-					</OutsideClickHandler>
-				</Col>
-			</Row>
+		<Container>
+			<OutsideClickHandler onOutsideClick={() => setFocusTitle(false)} display="contents">
+				<form onSubmit={handleSubmit}>
+					<Input
+						type="text"
+						placeholder="Title"
+						name="title"
+						value={task.title}
+						onChange={handleChange}
+						onFocus={() => setFocusTitle(true)}
+					/>
+					{focusTitle && (
+						<Button disabled={isLoading || !focusTitle} type="submit">
+							Save
+						</Button>
+					)}
+				</form>
+			</OutsideClickHandler>
 		</Container>
 	);
 
 	const renderDescription = () => (
-		<Row>
-			<Col>
-				<OutsideClickHandler onOutsideClick={() => setFocusDescription(false)}>
-					<Form onSubmit={handleSubmit}>
-						<FloatingLabel controlId="floatingTextarea1" label="Description">
-							<Form.Control
-								as="textarea"
-								style={{ height: '300px' }}
-								placeholder="Description"
-								name="description"
-								value={task.description}
-								onChange={handleChange}
-								onFocus={() => setFocusDescription(true)}
-							/>
-						</FloatingLabel>
-						{focusDescription && (
-							<Button
-								disabled={isLoading || !focusDescription}
-								className="mt-2"
-								variant="primary"
-								type="submit"
-							>
-								Save
-							</Button>
-						)}
-					</Form>
-				</OutsideClickHandler>
-			</Col>
-		</Row>
+		<Container>
+			<OutsideClickHandler onOutsideClick={() => setFocusDescription(false)} display="contents">
+				<form onSubmit={handleSubmit}>
+					<Description
+						placeholder="Description"
+						name="description"
+						value={task.description}
+						onChange={handleDescriptionChange}
+						onFocus={() => setFocusDescription(true)}
+					/>
+					{focusDescription && (
+						<Button disabled={isLoading || !focusDescription} variant="primary" type="submit">
+							Save
+						</Button>
+					)}
+				</form>
+			</OutsideClickHandler>
+		</Container>
 	);
 
 	const renderLeftPanel = () => (
-		<Col md={{ span: 8 }}>
+		<LeftPanel>
 			{renderDescription()}
 			<CommentSection task={task} updateTask={setTask} />
-		</Col>
+		</LeftPanel>
 	);
 
 	const renderRightPanel = useCallback(() => {
@@ -202,59 +202,38 @@ const EditTaskModal: FC<ModalProps> = ({ isOpen, id, openCloseModal, updateTaskI
 		const updated = new Date(updatedDate).toLocaleString();
 
 		return (
-			<Col md={{ span: 4 }}>
-				<Card style={{ height: '100%' }}>
-					<Card.Body>
-						<Row>
-							<DropdownButton id="dropdown-basic-button" title={<strong>{status}</strong>}>
-								{map(taskStatus, ({ label }: TaskStatus) => (
-									<Dropdown.Item key={label} onClick={updateStatus(label as TaskStatusLabel)}>
-										{label}
-									</Dropdown.Item>
-								))}
-							</DropdownButton>
-						</Row>
-						<Row className="p-1">
-							<small>Assigned to: {assignedTo}</small>
-						</Row>
-						<Row className="p-1">
-							<small>Author: {author}</small>
-						</Row>
-						<Row className="p-1">
-							<small>Last updated: {updated}</small>
-						</Row>
-						<Row className="p-1">
-							<small>Created: {created}</small>
-						</Row>
-						<Row className="p-1">
-							<Button variant="danger" onClick={deleteTask}>
-								<strong>Delete Task</strong>
-							</Button>
-						</Row>
-					</Card.Body>
-				</Card>
-			</Col>
+			<RightPanel>
+				<Select
+					onChange={({ target: { value } }) => updateStatus(value as TaskStatusLabel)}
+					name="status"
+					value={status}
+					options={map(taskStatus, ({ label }: TaskStatus) => ({ value: label, label }))}
+				/>
+				<Text margin={{ bottom: 1, top: 1 }}>Assigned to: {assignedTo}</Text>
+				<Text margin={{ bottom: 1 }}>Author: {author}</Text>
+				<Text margin={{ bottom: 1 }}>Last updated: {updated}</Text>
+				<Text margin={{ bottom: 1 }}>Created: {created}</Text>
+				<Button variant="warning" onClick={deleteTask}>
+					Delete Task
+				</Button>
+			</RightPanel>
 		);
 	}, [deleteTask, task, updateStatus]);
 
 	return (
-		<Modal show={isOpen} onHide={hideModal} keyboard={false} size="xl">
+		<Container style={{ minHeight: '400px' }}>
 			{isLoading ? (
-				<Modal.Body style={{ minHeight: '400px' }}>
-					<Loader />
-				</Modal.Body>
+				<Loader />
 			) : (
 				<>
-					<Modal.Header closeButton>{renderModalHeader()}</Modal.Header>
-					<Modal.Body>
-						<Row>
-							{renderLeftPanel()}
-							{renderRightPanel()}
-						</Row>
-					</Modal.Body>
+					{renderModalHeader()}
+					<ContentWrapper>
+						{renderLeftPanel()}
+						{renderRightPanel()}
+					</ContentWrapper>
 				</>
 			)}
-		</Modal>
+		</Container>
 	);
 };
 

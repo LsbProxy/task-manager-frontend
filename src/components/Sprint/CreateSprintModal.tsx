@@ -1,10 +1,15 @@
-import { Button, FloatingLabel, Form, Modal } from 'react-bootstrap';
-import { Error, NotificationContext } from '../../common/context/NotificationContextProvider';
+import { Error, useNotification } from '../../common/context/NotificationContextProvider';
 import ErrorAlertList, { Errors } from '../ErrorAlertList';
-import React, { ChangeEvent, FC, useCallback, useContext, useState } from 'react';
+import React, { ChangeEvent, FC, useCallback, useState } from 'react';
 import sprintService, { CreateSprint } from '../../common/services/SprintService';
 
+import Button from '../Button';
+import Container from '../Container';
+import Description from '../Description';
+import Input from '../Input';
 import Loader from '../Loader';
+import Row from '../Row';
+import Text from '../Text';
 import { isEmpty } from 'lodash';
 
 interface Props {
@@ -22,9 +27,12 @@ const CreateSprintModal: FC<Props> = ({ hideModal, refreshGrid, dashboardId }) =
 	const [isLoading, showLoader] = useState(false);
 	const [isSubmit, setIsSubmit] = useState(false);
 	const [errors, setErrors] = useState<Errors>([]);
-	const { handleError, addNotification } = useContext(NotificationContext);
+	const { handleError, addNotification } = useNotification();
 
 	const handleChange = ({ target: { name, value } }: ChangeEvent<HTMLInputElement>) =>
+		setSprint((currentSprint) => ({ ...currentSprint, [name]: value }));
+
+	const handleDescriptionChange = ({ target: { name, value } }: ChangeEvent<HTMLTextAreaElement>) =>
 		setSprint((currentSprint) => ({ ...currentSprint, [name]: value }));
 
 	const validateSprint = useCallback(() => {
@@ -61,45 +69,38 @@ const CreateSprintModal: FC<Props> = ({ hideModal, refreshGrid, dashboardId }) =
 
 	return (
 		<>
-			<Modal.Header closeButton>
-				<strong>Create Sprint</strong>
-			</Modal.Header>
-			<Modal.Body style={{ minHeight: '300px' }}>
+			<Container>
+				<Text>
+					<strong>Create Sprint</strong>
+				</Text>
+			</Container>
+			<Container style={{ minHeight: '300px' }}>
 				{isLoading ? (
 					<Loader />
 				) : (
-					<Form>
+					<form>
 						<ErrorAlertList errors={errors} />
-						<Form.Control
+						<Input
 							type="text"
 							placeholder="Title"
 							name="title"
 							value={sprint.title}
 							onChange={handleChange}
 						/>
-						<FloatingLabel className="pt-1" controlId="floatingTextarea2" label="Description">
-							<Form.Control
-								as="textarea"
-								style={{ height: '300px' }}
-								placeholder="Description"
-								name="description"
-								value={sprint.description}
-								onChange={handleChange}
-							/>
-						</FloatingLabel>
-					</Form>
+						<Description
+							placeholder="Description"
+							name="description"
+							value={sprint.description}
+							onChange={handleDescriptionChange}
+						/>
+					</form>
 				)}
-			</Modal.Body>
-			<Modal.Footer>
-				<Button
-					className="mt-2"
-					variant="primary"
-					onClick={handleCreateSprint}
-					disabled={isSubmit && !sprint.title}
-				>
+			</Container>
+			<Row align="flex-end">
+				<Button variant="primary" onClick={handleCreateSprint} disabled={isSubmit && !sprint.title}>
 					Create
 				</Button>
-			</Modal.Footer>
+			</Row>
 		</>
 	);
 };

@@ -1,9 +1,8 @@
-import { FC, useContext } from 'react';
-
-import { LoaderContext } from '../../common/context/LoaderContextProvider';
+import { FC } from 'react';
+import { useLoader } from './../../common/context/LoaderContextProvider';
 
 const Logout: FC = () => {
-	const { showLoader } = useContext(LoaderContext);
+	const { showLoader } = useLoader();
 
 	showLoader(true);
 	window.localStorage.removeItem('user');

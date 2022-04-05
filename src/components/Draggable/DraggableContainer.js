@@ -6,13 +6,6 @@ import { DropTarget } from 'react-dnd';
 import ItemTypes from './ItemTypes';
 import update from 'immutability-helper';
 
-const calculateHeight = () => {
-	const navHeight = get(document.querySelector('nav'), 'clientHeight', 0);
-	const rowLabelHeight = get(document.querySelector('#draggableRowLabel'), 'clientHeight', 0);
-
-	return window.innerHeight - navHeight - rowLabelHeight;
-};
-
 class DraggableContainer extends Component {
 	pushItem = (item) => {
 		const { items, handleChange } = this.props;
@@ -55,7 +48,7 @@ class DraggableContainer extends Component {
 		return connectDropTarget(
 			<div
 				style={{
-					height: calculateHeight(),
+					height: '100%',
 				}}
 			>
 				{items.map((item, i) => (

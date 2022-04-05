@@ -1,30 +1,18 @@
-import {
-	Button,
-	Col,
-	Dropdown,
-	DropdownButton,
-	FloatingLabel,
-	Form,
-	InputGroup,
-	Modal,
-	Row,
-} from 'react-bootstrap';
-import { Error, NotificationContext } from '../../common/context/NotificationContextProvider';
+import { Error, useNotification } from '../../common/context/NotificationContextProvider';
 import ErrorAlertList, { Errors } from '../ErrorAlertList';
-import React, {
-	ChangeEvent,
-	FC,
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useState,
-} from 'react';
+import React, { ChangeEvent, FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { isEmpty, map } from 'lodash';
 import taskService, { CreateTask } from '../../common/services/TaskService';
 import taskStatus, { TaskStatus } from '../../common/utils/taskStatus';
 
+import Button from '../Button';
+import Container from '../Container';
+import Description from '../Description';
+import Input from '../Input';
 import Loader from '../Loader';
+import Row from '../Row';
+import Select from '../Select';
+import Text from '../Text';
 import { User } from '../../common/services/AuthService';
 import dashboardService from '../../common/services/DashboardService';
 
@@ -51,7 +39,7 @@ const CreateTaskModal: FC<Props> = ({ dashboardId, sprintId, hideModal, refreshG
 	const [errors, setErrors] = useState<Errors>([]);
 	const [isSubmit, setSubmit] = useState(false);
 	const [isLoading, showLoader] = useState(false);
-	const { handleError, addNotification } = useContext(NotificationContext);
+	const { handleError, addNotification } = useNotification();
 
 	const fetchMembers = useCallback(async () => {
 		try {
@@ -75,11 +63,11 @@ const CreateTaskModal: FC<Props> = ({ dashboardId, sprintId, hideModal, refreshG
 	const handleChange = ({ target: { name, value } }: ChangeEvent<HTMLInputElement>) =>
 		setTask((currentTask) => ({ ...currentTask, [name]: value }));
 
-	const handleSelectChange = ({ target: { name, value } }: ChangeEvent<HTMLSelectElement>) =>
+	const handleDescriptionChange = ({ target: { name, value } }: ChangeEvent<HTMLTextAreaElement>) =>
 		setTask((currentTask) => ({ ...currentTask, [name]: value }));
 
-	const handleDropdownItemClick = (name: string, value: string) => () =>
-		handleChange({ target: { name, value } } as ChangeEvent<HTMLInputElement>);
+	const handleSelectChange = ({ target: { name, value } }: ChangeEvent<HTMLSelectElement>) =>
+		setTask((currentTask) => ({ ...currentTask, [name]: value }));
 
 	const validateTask = useCallback(() => {
 		const newErrors = [];
@@ -114,88 +102,60 @@ const CreateTaskModal: FC<Props> = ({ dashboardId, sprintId, hideModal, refreshG
 	const renderModalBody = () =>
 		useMemo(
 			() => (
-				<Modal.Body style={{ minHeight: '300px' }}>
+				<Container style={{ minHeight: '300px' }}>
 					{isLoading ? (
 						<Loader />
 					) : (
-						<Form>
+						<form>
 							<ErrorAlertList errors={errors} />
-							<Form.Control
+							<Input
 								type="text"
 								placeholder="Title"
 								name="title"
 								value={task.title}
 								onChange={handleChange}
 							/>
-							<FloatingLabel className="pt-1" controlId="floatingTextarea2" label="Description">
-								<Form.Control
-									as="textarea"
-									style={{ height: '300px' }}
-									placeholder="Description"
-									name="description"
-									value={task.description}
-									onChange={handleChange}
+							<Description
+								placeholder="Description"
+								name="description"
+								value={task.description}
+								onChange={handleDescriptionChange}
+							/>
+							<Row align="flex-start" gap="1rem">
+								<Select
+									onChange={handleSelectChange}
+									name="assignedTo"
+									value={task.assignedTo}
+									label="Assigned to:"
+									options={map(members, (value: string) => ({ value, label: value }))}
 								/>
-							</FloatingLabel>
-							<Row className="pt-1">
-								<Col sm="3">
-									<FloatingLabel controlId="floatingSelect" label="Assigned to:">
-										<Form.Select
-											onChange={handleSelectChange}
-											name="assignedTo"
-											value={task.assignedTo}
-										>
-											{map(members, (member: string) => (
-												<option key={member} value={member}>
-													{member}
-												</option>
-											))}
-										</Form.Select>
-									</FloatingLabel>
-								</Col>
-								<Col sm="3" className="my-auto pt-1">
-									<InputGroup>
-										<InputGroup.Text>Status:</InputGroup.Text>
-										<DropdownButton
-											id="dropdown-basic-button"
-											title={<strong>{task.status}</strong>}
-										>
-											{map(taskStatus, ({ label }: TaskStatus) => (
-												<Dropdown.Item
-													key={label}
-													onClick={handleDropdownItemClick('status', label)}
-												>
-													{label}
-												</Dropdown.Item>
-											))}
-										</DropdownButton>
-									</InputGroup>
-								</Col>
+								<Select
+									onChange={handleSelectChange}
+									name="status"
+									value={task.status}
+									label="Status:"
+									options={map(taskStatus, ({ label }: TaskStatus) => ({ value: label, label }))}
+								/>
 							</Row>
-						</Form>
+						</form>
 					)}
-				</Modal.Body>
+				</Container>
 			),
-			[handleDropdownItemClick, isLoading, handleChange, errors, task, members, taskStatus],
+			[isLoading, handleChange, errors, task, members, taskStatus],
 		);
 
 	return (
-		<>
-			<Modal.Header closeButton>
+		<Container>
+			<Text>
 				<strong>Create Task</strong>
-			</Modal.Header>
+			</Text>
 			{renderModalBody()}
-			<Modal.Footer>
-				<Button
-					className="mt-2"
-					variant="primary"
-					onClick={handleCreateTask}
-					disabled={isSubmit && !task.title}
-				>
+			<Row align="flex-end">
+				<Button onClick={handleCreateTask} disabled={(isSubmit && !task.title) || isLoading}>
 					Create
 				</Button>
-			</Modal.Footer>
-		</>
+			</Row>
+		</Container>
 	);
 };
 

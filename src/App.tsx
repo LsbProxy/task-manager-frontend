@@ -50,15 +50,13 @@ const App: FC = () => {
 	}, []);
 
 	return (
-		<div className="App">
-			<NotificationContextProvider>
-				<ModalContextProvider>
-					<LoaderContextProvider>
-						<Router />
-					</LoaderContextProvider>
-				</ModalContextProvider>
-			</NotificationContextProvider>
-		</div>
+		<NotificationContextProvider>
+			<ModalContextProvider>
+				<LoaderContextProvider>
+					<Router />
+				</LoaderContextProvider>
+			</ModalContextProvider>
+		</NotificationContextProvider>
 	);
 };
 

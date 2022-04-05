@@ -1,19 +1,32 @@
-import React, { FC, useContext } from 'react';
+import React, { FC } from 'react';
 
-import { Container } from 'react-bootstrap';
 import Loader from '../Loader';
-import { LoaderContext } from '../../common/context/LoaderContextProvider';
+import styled from 'styled-components';
+import { useLoader } from '../../common/context/LoaderContextProvider';
+
+const Wrapper = styled.div`
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+`;
+
+const Container = styled.div<{ visible: boolean }>`
+	display: ${(props) => (props.visible ? 'block' : 'none')};
+	width: 30%;
+	@media (max-width: 768px) {
+		width: 100%;
+	}
+`;
 
 const PublicLayout: FC = ({ children }) => {
-	const { isLoading } = useContext(LoaderContext);
+	const { isLoading } = useLoader();
 
 	return (
-		<div>
-			<Container fluid>
-				{isLoading && <Loader />}
-				<div className={isLoading ? 'invisible' : ''}>{children}</div>
-			</Container>
-		</div>
+		<Wrapper>
+			{isLoading && <Loader centered={true} />}
+			<Container visible={!isLoading}>{children}</Container>
+		</Wrapper>
 	);
 };
 

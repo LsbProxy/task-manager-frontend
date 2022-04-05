@@ -1,7 +1,13 @@
 import React, { FC } from 'react';
 
-import { Alert } from 'react-bootstrap';
+import Alert from './Alert';
 import { get } from 'lodash';
+import styled from 'styled-components';
+
+const ScrollableContainer = styled.div`
+	max-height: 15rem;
+	overflow: auto;
+`;
 
 export interface AlertError {
 	message?: string;
@@ -19,7 +25,7 @@ interface Props {
 }
 
 const ErrorAlertList: FC<Props> = ({ errors }) => (
-	<>
+	<ScrollableContainer>
 		{errors.map((err) => {
 			const invalid: boolean = get(err, 'invalid', false);
 			const error: string =
@@ -41,7 +47,7 @@ const ErrorAlertList: FC<Props> = ({ errors }) => (
 				</Alert>
 			);
 		})}
-	</>
+	</ScrollableContainer>
 );
 
 export default ErrorAlertList;

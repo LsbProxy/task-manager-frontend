@@ -1,59 +1,135 @@
-import { Button, Form, FormControl, Nav, NavDropdown, Navbar } from 'react-bootstrap';
-import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
-import dashboardService, { Dashboard } from '../common/services/DashboardService';
+import React, { FC, useState } from 'react';
 
+import ArrowDown from '../assets/arrow-down.png';
+import OutsideClickHandler from 'react-outside-click-handler';
+import { RootState } from '../app/store';
 import { User } from '../common/services/AuthService';
+import styled from 'styled-components';
 import { useHistory } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 const user: User = JSON.parse(window.localStorage.getItem('user') || '{}');
 
+const Button = styled.button`
+	font-weight: bold;
+	border-radius: 0.3rem;
+	border: none;
+	background-color: #f1f1f1;
+	&:hover {
+		background-color: #ddd;
+	}
+	padding: 0.6rem;
+`;
+
+const Navbar = styled.div`
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	width: 100%;
+	padding: 0.2rem 1rem;
+	background-color: #2478f2;
+	color: #ffff;
+`;
+
+const Brand = styled.p`
+	font-size: 1.5rem;
+	text-align: center;
+	user-select: none;
+	cursor: pointer;
+	margin: 0;
+	&:hover {
+		color: black;
+	}
+`;
+
+const Dropdown = styled.div`
+	position: absolute;
+	background-color: #f1f1f1;
+	box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+	z-index: 1;
+	max-width: 135px;
+	right: 1rem;
+`;
+
+const DropdownItem = styled.a`
+	color: black;
+	padding: 12px 16px;
+	text-decoration: none;
+	display: block;
+	&:hover {
+		background-color: #ddd;
+	}
+	cursor: pointer;
+	user-select: none;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+`;
+
+const Image = styled.img`
+	width: 10px;
+	height: 10px;
+	margin-left: 5px;
+`;
+
 const Navigationbar: FC = () => {
-	const [dashboards, setDashboards] = useState<Dashboard[]>([]);
+	const [isOpen, setIsOpen] = useState(false);
+	const [isOpenDashboards, setIsOpenDashboards] = useState(false);
+	const { dashboards } = useSelector((state: RootState) => state.dashboards);
 	const history = useHistory();
 
-	const fetchDashboards = useCallback(async () => {
-		if (!user.email) {
-			return;
-		}
-		const dashboards = await dashboardService.listDashboards();
-		setDashboards(dashboards);
-	}, [user]);
-
-	useEffect(() => {
-		fetchDashboards();
-	}, []);
-
-	const renderDashboardDropdown = () =>
-		useMemo(
-			() =>
-				dashboards.length ? (
-					<NavDropdown title="Dashboards" id="navbarScrollingDropdown">
-						{dashboards.map(({ title, id }) => (
-							<NavDropdown.Item key={id} onClick={() => history.push(`/dashboard/${id}`)}>
-								{title}
-							</NavDropdown.Item>
-						))}
-					</NavDropdown>
-				) : null,
-			[dashboards],
+	const renderDropdown = () =>
+		isOpen && (
+			<OutsideClickHandler
+				onOutsideClick={() => {
+					setIsOpen(false);
+					setIsOpenDashboards(false);
+				}}
+				display="contents"
+			>
+				<Dropdown>
+					{renderDashboardDropdown()}
+					<DropdownItem onClick={() => history.push('/logout')}>Logout</DropdownItem>
+				</Dropdown>
+			</OutsideClickHandler>
 		);
 
+	const renderDashboardDropdown = () =>
+		dashboards.length ? (
+			<>
+				<DropdownItem onClick={() => setIsOpenDashboards(!isOpenDashboards)}>
+					Dashboards
+					<Image src={ArrowDown} />
+				</DropdownItem>
+				{isOpenDashboards &&
+					dashboards.map(({ title, id }) => (
+						<DropdownItem
+							key={id}
+							onClick={() => {
+								setIsOpenDashboards(false);
+								setIsOpen(false);
+								history.push(`/dashboard/${id}`);
+							}}
+						>
+							{title}
+						</DropdownItem>
+					))}
+			</>
+		) : null;
+
 	return (
-		<Navbar bg="light" expand="lg">
-			<Navbar.Brand onClick={() => history.push('/')}>Task Manager</Navbar.Brand>
-			<Form className="d-flex">
-				<FormControl type="search" placeholder="Search" className="mr-2" aria-label="Search" />
-				<Button variant="outline-success">Search</Button>
-			</Form>
-			<Navbar.Toggle aria-controls="navbarScroll" />
-			<Navbar.Collapse id="navbarScroll" className="justify-content-end">
-				<Nav className="mr-auto my-2 my-lg-0" style={{ maxHeight: '300px' }} navbarScroll>
-					{renderDashboardDropdown()}
-					<NavDropdown title={user.email} id="navbarScrollingDropdown">
-						<NavDropdown.Item onClick={() => history.push('/logout')}>Logout</NavDropdown.Item>
-					</NavDropdown>
-				</Nav>
-			</Navbar.Collapse>
+		<Navbar id="nav">
+			<Brand onClick={() => history.push('/')}>Task Manager</Brand>
+			<div>
+				<Button onClick={() => setIsOpen(!isOpen)}>
+					{user.email}
+					<Image src={ArrowDown} />
+				</Button>
+				{renderDropdown()}
+			</div>
 		</Navbar>
 	);
 };

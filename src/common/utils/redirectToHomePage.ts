@@ -1,7 +1,5 @@
-const redirectToHomePage = (redirect = false): void => {
-	if (redirect) {
-		window.location.href = '/';
-	}
+const redirectToHomePage = (): void => {
+	window.location.href = '/';
 };
 
 export default redirectToHomePage;

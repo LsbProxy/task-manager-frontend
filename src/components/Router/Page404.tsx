@@ -1,5 +1,9 @@
-import { Alert, Button, Modal } from 'react-bootstrap';
 import React, { FC } from 'react';
+
+import Alert from '../Alert';
+import Button from '../Button';
+import Container from '../Container';
+import Modal from '../Modal';
 
 const show = true;
 
@@ -9,14 +13,11 @@ const Page404: FC = () => {
 	};
 
 	return (
-		<Modal show={show} onHide={handleClose} backdrop="static" keyboard={false} centered size="sm">
-			<Modal.Header closeButton />
-			<Modal.Body>
+		<Modal show={show} onHide={handleClose} centered={true} size="sm">
+			<Container>
 				<Alert variant="warning">Page doesn&apos;t exist!</Alert>
-			</Modal.Body>
-			<Modal.Footer>
-				<Button onClick={handleClose}>ok</Button>
-			</Modal.Footer>
+				<Button onClick={handleClose}>OK</Button>{' '}
+			</Container>
 		</Modal>
 	);
 };

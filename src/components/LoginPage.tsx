@@ -1,12 +1,16 @@
-import { Alert, Button, Col, Form, Row } from 'react-bootstrap';
-import React, { ChangeEvent, FC, MouseEvent, useCallback, useContext, useState } from 'react';
+import Button, { ButtonGroup } from './Button';
+import React, { ChangeEvent, FC, MouseEvent, useCallback, useState } from 'react';
 
+import Alert from './Alert';
+import Container from './Container';
 import { Error } from '../common/context/NotificationContextProvider';
 import ErrorAlertList from './ErrorAlertList';
-import { LoaderContext } from '../common/context/LoaderContextProvider';
+import Input from './Input';
+import Title from './Title';
 import authService from '../common/services/AuthService';
 import { isEmpty } from 'lodash';
 import { useHistory } from 'react-router-dom';
+import { useLoader } from '../common/context/LoaderContextProvider';
 
 const { REACT_APP_TEST_EMAIL, REACT_APP_TEST_PASSWORD } = process.env;
 
@@ -15,7 +19,7 @@ const LoginPage: FC = () => {
 	const [password, setPassword] = useState('');
 	const [showDisclaimer, setDisclaimer] = useState(true);
 	const [errors, setErrors] = useState<string[]>([]);
-	const { showLoader } = useContext(LoaderContext);
+	const { showLoader } = useLoader();
 	const history = useHistory();
 
 	const handleError = useCallback(
@@ -93,72 +97,59 @@ const LoginPage: FC = () => {
 	}, [handleError]);
 
 	return (
-		<Row className="justify-content-center mt-5 pb-5">
-			<Col lg="3" md="5">
+		<Container margin={1}>
+			<form onSubmit={handleLogin}>
+				<Title>Login</Title>
+				{REACT_APP_TEST_EMAIL && REACT_APP_TEST_PASSWORD && (
+					<Alert
+						show={showDisclaimer}
+						onClose={() => setDisclaimer(false)}
+						variant="warning"
+						dismissible
+					>
+						<p>
+							Only Project Managers can:
+							<br />
+							&nbsp;&nbsp;&nbsp;&nbsp;- create Dashboards and Sprints
+							<br />
+							&nbsp;&nbsp;&nbsp;&nbsp;- add/update member access
+							<br />
+							<br />
+							An email invitation is neded to register as a Project Manager.
+						</p>
+						<hr />
+						<Container>
+							<Button onClick={loginAsTestAdmin} variant="secondary">
+								Login as test Project Manager
+							</Button>
+						</Container>
+					</Alert>
+				)}
 				<ErrorAlertList errors={errors} />
-				<Form onSubmit={handleLogin}>
-					<h3 className="py-3">
-						<strong>Login</strong>
-					</h3>
-					{REACT_APP_TEST_EMAIL && REACT_APP_TEST_PASSWORD && (
-						<Alert
-							show={showDisclaimer}
-							onClose={() => setDisclaimer(false)}
-							variant="warning"
-							dismissible
-						>
-							<p>
-								Only Project Managers can:
-								<br />
-								&nbsp;&nbsp;&nbsp;&nbsp;- create Dashboards and Sprints
-								<br />
-								&nbsp;&nbsp;&nbsp;&nbsp;- add/update member access
-								<br />
-								<br />
-								An email invitation is neded to register as a Project Manager.
-							</p>
-							<hr />
-							<div className="d-flex justify-content-end">
-								<Button
-									onClick={loginAsTestAdmin}
-									variant="outline-warning"
-									className="text-dark"
-									size="sm"
-								>
-									Login as test Project Manager
-								</Button>
-							</div>
-						</Alert>
-					)}
-					<Form.Group className="mb-3" controlId="formBasicEmail">
-						<Form.Label>Email address</Form.Label>
-						<Form.Control
-							name="email"
-							value={email}
-							onChange={({ target: { value } }) => setEmail(value)}
-							type="email"
-							placeholder="Enter email"
-						/>
-					</Form.Group>
-					<Form.Group className="mb-3" controlId="formBasicPassword">
-						<Form.Label>Password</Form.Label>
-						<Form.Control
-							name="password"
-							value={password}
-							onChange={({ target: { value } }) => setPassword(value)}
-							type="password"
-							placeholder="Password"
-						/>
-					</Form.Group>
-					<Button variant="primary" type="submit">
-						Login
-					</Button>
-					<Button onClick={redirectToRegisterPage} variant="outline-primary" className="float-end">
+				<Input
+					type="email"
+					name="email"
+					label="Email address"
+					placeholder="Enter email"
+					value={email}
+					onChange={({ target: { value } }) => setEmail(value)}
+				/>
+				<Input
+					type="password"
+					name="password"
+					label="Password"
+					placeholder="Password"
+					value={password}
+					onChange={({ target: { value } }) => setPassword(value)}
+				/>
+				<ButtonGroup>
+					<Button type="submit">Login</Button>
+					<Button onClick={redirectToRegisterPage} variant="outline-primary">
 						Register
 					</Button>
-				</Form>
-			</Col>
-		</Row>
+				</ButtonGroup>
+			</form>
+		</Container>
 	);
 };
 
