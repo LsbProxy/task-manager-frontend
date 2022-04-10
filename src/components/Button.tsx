@@ -81,6 +81,7 @@ const Button = styled.button<Props>`
 	&:hover {
 		background-color: ${(props) => props.variant && colors[props.variant].hoverBg};
 	}
+	cursor: pointer;
 `;
 
 Button.defaultProps = {

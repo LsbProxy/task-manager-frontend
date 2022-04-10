@@ -7,7 +7,6 @@ import Container from './Container';
 import { Error } from '../common/context/NotificationContextProvider';
 import Input from './Input';
 import Title from './Title';
-import { isEmpty } from 'lodash';
 import { useHistory } from 'react-router-dom';
 import { useLoader } from '../common/context/LoaderContextProvider';
 
@@ -26,7 +25,7 @@ const RegisterPage: FC = () => {
 
 	const handleError = useCallback(
 		(err: Error) => {
-			if (err && !isEmpty(err.error)) {
+			if (err && err.error && err.error.length) {
 				setErrors(err.error.map((msg) => msg));
 			}
 		},

@@ -8,7 +8,6 @@ import ErrorAlertList from './ErrorAlertList';
 import Input from './Input';
 import Title from './Title';
 import authService from '../common/services/AuthService';
-import { isEmpty } from 'lodash';
 import { useHistory } from 'react-router-dom';
 import { useLoader } from '../common/context/LoaderContextProvider';
 
@@ -24,7 +23,7 @@ const LoginPage: FC = () => {
 
 	const handleError = useCallback(
 		(err: Error) => {
-			if (err && !isEmpty(err.error)) {
+			if (err && err.error && err.error.length) {
 				setErrors(err.error.map((msg) => msg));
 			}
 		},

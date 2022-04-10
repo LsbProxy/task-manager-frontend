@@ -6,7 +6,7 @@ import Container from '../../components/Container';
 import Modal from '../../components/Modal';
 
 export interface Error {
-	error: string[];
+	error?: string[];
 	message: string;
 }
 
@@ -42,7 +42,7 @@ const NotificationContextProvider: FC = ({ children }) => {
 
 	const handleError = (err: Error) => {
 		if (err && (!isEmpty(err.error) || err.message)) {
-			let error = first(err.error) || err.message;
+			let error = first(err.error) || err;
 
 			if (err.error && err.error.length > 1) {
 				error = err.error.join('\n');

@@ -1,11 +1,13 @@
 import { PayloadAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { filter, findIndex, trim } from 'lodash';
 
+import { Error } from '../common/context/NotificationContextProvider';
 import { Sprint } from '../common/services/SprintService';
 import dashboardService from '../common/services/DashboardService';
 
 interface State {
 	loading: boolean;
+	error?: Error;
 	sprints: Sprint[];
 }
 
@@ -15,7 +17,12 @@ const initialState: State = {
 };
 
 export const listSprints = createAsyncThunk('listSprints', async (id: string) =>
-	dashboardService.getDashboard(id),
+	dashboardService.getDashboard(id).catch((e) => {
+		if (e.error && e.error[0]) {
+			throw e.error[0];
+		}
+		throw e;
+	}),
 );
 
 export const sprintSlice = createSlice({
@@ -51,8 +58,9 @@ export const sprintSlice = createSlice({
 			state.loading = true;
 		});
 
-		builder.addCase(listSprints.rejected, (state) => {
+		builder.addCase(listSprints.rejected, (state, { error }) => {
 			state.loading = false;
+			state.error = error as Error;
 		});
 
 		builder.addCase(listSprints.fulfilled, (state, action) => {

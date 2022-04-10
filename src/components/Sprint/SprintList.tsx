@@ -1,4 +1,3 @@
-import { Error, useNotification } from '../../common/context/NotificationContextProvider';
 import React, { FC, useCallback, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -14,25 +13,28 @@ import { listSprints } from '../../features/sprintSlice';
 import redirectToHomePage from '../../common/utils/redirectToHomePage';
 import { useLoader } from '../../common/context/LoaderContextProvider';
 import { useModal } from '../../common/context/ModalContextProvider';
+import { useNotification } from '../../common/context/NotificationContextProvider';
 import { useRouteMatch } from 'react-router-dom';
 
 const SprintList: FC = () => {
-	const { sprints, loading } = useSelector((state: RootState) => state.sprints);
+	const { sprints, loading, error } = useSelector((state: RootState) => state.sprints);
 	const { handleError } = useNotification();
 	const { showLoader, isLoading } = useLoader();
 	const { setState: setModalState } = useModal();
 	const { params }: { params: { id: string } } = useRouteMatch();
 	const dispatch = useDispatch();
 
-	const fetchSprints = useCallback(async () => {
-		try {
-			if (!parseInt(params.id)) {
-				return redirectToHomePage();
-			}
-			dispatch(listSprints(params.id));
-		} catch (e) {
-			handleError(e as Error);
+	useEffect(() => {
+		if (error) {
+			handleError(error);
 		}
+	}, [error]);
+
+	const fetchSprints = useCallback(async () => {
+		if (!parseInt(params.id)) {
+			return redirectToHomePage();
+		}
+		dispatch(listSprints(params.id));
 	}, [params, sprints]);
 
 	useEffect(() => {

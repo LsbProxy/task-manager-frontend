@@ -35,22 +35,24 @@ const ColumnContent = styled.div`
 `;
 
 const TaskGrid: FC = () => {
-	const { sprint, loading } = useSelector((state: RootState) => state.tasks);
+	const { sprint, loading, error } = useSelector((state: RootState) => state.tasks);
 	const { showLoader, isLoading } = useLoader();
 	const { handleError, addNotification } = useNotification();
 	const { setState: setModalState } = useModal();
 	const { params }: { params: { id: string } } = useRouteMatch();
 	const dispatch = useDispatch();
 
-	const fetchSprint = useCallback(async () => {
-		try {
-			if (!parseInt(params.id)) {
-				return redirectToHomePage();
-			}
-			dispatch(listTasks(params.id));
-		} catch (e) {
-			handleError(e as Error);
+	useEffect(() => {
+		if (error) {
+			handleError(error);
 		}
+	}, [error]);
+
+	const fetchSprint = useCallback(async () => {
+		if (!parseInt(params.id)) {
+			return redirectToHomePage();
+		}
+		dispatch(listTasks(params.id));
 	}, [params]);
 
 	useEffect(() => {

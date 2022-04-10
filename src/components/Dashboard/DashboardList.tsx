@@ -1,5 +1,4 @@
-import { Error, useNotification } from '../../common/context/NotificationContextProvider';
-import React, { FC, useCallback, useEffect, useMemo } from 'react';
+import React, { FC, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import Button from '../Button';
@@ -13,25 +12,33 @@ import { isEmpty } from 'lodash';
 import { listDashboards } from '../../features/dashboardSlice';
 import { useLoader } from '../../common/context/LoaderContextProvider';
 import { useModal } from '../../common/context/ModalContextProvider';
+import { useNotification } from '../../common/context/NotificationContextProvider';
 
 const DashboardList: FC = () => {
-	const { dashboards, loading: dashboardsLoading } = useSelector(
-		(state: RootState) => state.dashboards,
+	const {
+		dashboards,
+		loading: dashboardsLoading,
+		error: dashboardError,
+	} = useSelector((state: RootState) => state.dashboards);
+	const { loading: usersLoading, error: userError } = useSelector(
+		(state: RootState) => state.users,
 	);
-	const { loading: usersLoading } = useSelector((state: RootState) => state.users);
 	const { handleError } = useNotification();
 	const { isLoading, showLoader } = useLoader();
 	const { setState: setModalState } = useModal();
 	const dispatch = useDispatch();
+	const error = dashboardError || userError;
 
-	const fetchData = useCallback(async () => {
-		try {
-			dispatch(getUsers());
-			dispatch(listDashboards());
-		} catch (e) {
-			handleError(e as Error);
+	useEffect(() => {
+		if (error) {
+			handleError(error);
 		}
-	}, []);
+	}, [error]);
+
+	const fetchData = () => {
+		dispatch(getUsers());
+		dispatch(listDashboards());
+	};
 
 	useEffect(() => {
 		showLoader(usersLoading || dashboardsLoading);
@@ -41,12 +48,12 @@ const DashboardList: FC = () => {
 		fetchData();
 	}, []);
 
-	const openCreateDashboardModal = useCallback(() => {
+	const openCreateDashboardModal = () => {
 		setModalState({
 			show: true,
 			ModalContentComponent: (props) => <CreateDashboardModal refreshGrid={fetchData} {...props} />,
 		});
-	}, [fetchData]);
+	};
 
 	const renderDashboards = () =>
 		useMemo(() => {

@@ -2,10 +2,12 @@ import { PayloadAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { filter, findIndex, trim } from 'lodash';
 import sprintService, { Sprint } from '../common/services/SprintService';
 
+import { Error } from '../common/context/NotificationContextProvider';
 import { Task } from '../common/services/TaskService';
 
 interface State {
 	loading: boolean;
+	error?: Error;
 	sprint: Sprint;
 }
 
@@ -24,7 +26,12 @@ const initialState: State = {
 };
 
 export const listTasks = createAsyncThunk('listTasks', async (id: string) =>
-	sprintService.getSprint(id),
+	sprintService.getSprint(id).catch((e) => {
+		if (e.error && e.error[0]) {
+			throw e.error[0];
+		}
+		throw e;
+	}),
 );
 
 export const taskSlice = createSlice({
@@ -68,8 +75,9 @@ export const taskSlice = createSlice({
 			state.loading = true;
 		});
 
-		builder.addCase(listTasks.rejected, (state) => {
+		builder.addCase(listTasks.rejected, (state, { error }) => {
 			state.loading = false;
+			state.error = error as Error;
 		});
 
 		builder.addCase(listTasks.fulfilled, (state, action) => {
